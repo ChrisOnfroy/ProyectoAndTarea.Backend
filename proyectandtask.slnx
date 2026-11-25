@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Proyectandtask.Domain/Proyectandtask.Domain.csproj" />
+  <Project Path="src/Proyectoandtask.Application/Proyectoandtask.Application.csproj" />
+</Solution>

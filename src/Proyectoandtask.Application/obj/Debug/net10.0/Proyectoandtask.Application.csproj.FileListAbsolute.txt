@@ -1,0 +1,15 @@
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/bin/Debug/net10.0/Proyectoandtask.Application.deps.json
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/bin/Debug/net10.0/Proyectoandtask.Application.dll
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/bin/Debug/net10.0/Proyectoandtask.Application.pdb
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/bin/Debug/net10.0/Proyectandtask.Domain.dll
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/bin/Debug/net10.0/Proyectandtask.Domain.pdb
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.csproj.AssemblyReference.cache
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.GeneratedMSBuildEditorConfig.editorconfig
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.AssemblyInfoInputs.cache
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.AssemblyInfo.cs
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.csproj.CoreCompileInputs.cache
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyecto.0DEC91FC.Up2Date
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.dll
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/refint/Proyectoandtask.Application.dll
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.pdb
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/ref/Proyectoandtask.Application.dll
