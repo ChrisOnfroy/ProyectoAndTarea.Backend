@@ -104,13 +104,32 @@ public sealed class RepositoryIntegrationTests
         var altaPrioridad = await repository.ObtenerPorPrioridadAsync(proyecto.Id, ownerId, PrioridadTarea.Alta);
         var vencidas = await repository.ObtenerVencidasNoCompletadasAsync(proyecto.Id, ownerId, DateTime.UtcNow);
         var conteos = await repository.ObtenerConteosPorProyectoAsync(proyecto.Id, ownerId);
-        var tienePendientes = await repository.TieneTareasPendientesPorProyectoAsync(proyecto.Id, ownerId);
+        var tienePendientes = await repository.TieneTareasSinCompletarPorProyectoAsync(proyecto.Id, ownerId);
 
         Assert.Equal(vencidaPendiente.Id, Assert.Single(pendientes).Id);
         Assert.Equal(2, altaPrioridad.Count);
         Assert.Equal(vencidaPendiente.Id, Assert.Single(vencidas).Id);
         Assert.Equal((3, 1), conteos);
         Assert.True(tienePendientes);
+    }
+
+    [Fact]
+    public async Task TareaRepository_DetectaTareasSinCompletarSoloEnElProyectoConsultado()
+    {
+        await using var context = _fixture.CreateContext();
+        var ownerId = await CreateOwnerAsync(context);
+        var project = CreateProject(ownerId);
+        var otherProject = CreateProject(ownerId);
+        context.Proyectos.AddRange(project, otherProject);
+        context.Tareas.AddRange(
+            CreateTask(project.Id, "Completada", EstadoTarea.completada),
+            CreateTask(otherProject.Id, "Pendiente externa", EstadoTarea.pendiente));
+        await context.SaveChangesAsync();
+
+        var repository = new TareaRepository(context);
+
+        Assert.False(await repository.TieneTareasSinCompletarPorProyectoAsync(project.Id, ownerId));
+        Assert.True(await repository.TieneTareasSinCompletarPorProyectoAsync(otherProject.Id, ownerId));
     }
 
     [Fact]
@@ -148,12 +167,13 @@ public sealed class RepositoryIntegrationTests
         };
     }
 
-    private static Tarea CreateTask(Guid proyectoId, string name)
+    private static Tarea CreateTask(Guid proyectoId, string name, EstadoTarea state = EstadoTarea.pendiente)
     {
         return new Tarea
         {
             Name = name,
-            ProyectoId = proyectoId
+            ProyectoId = proyectoId,
+            EstadoTarea = state
         };
     }
 

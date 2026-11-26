@@ -139,15 +139,16 @@ public sealed class ServiceRequirementTests
     }
 
     [Fact]
-    public async Task EliminarAsync_RechazaProyectoConTareasPendientes()
+    public async Task EliminarAsync_RechazaProyectoConTareasSinCompletar()
     {
         var proyecto = new Proyecto { Id = Guid.NewGuid() };
         var proyectos = new FakeProyectoRepository { Proyecto = proyecto };
-        var tareas = new FakeTareaRepository { TienePendientes = true };
+        var tareas = new FakeTareaRepository { TieneSinCompletar = true };
         var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas), new FakeCurrentUser());
 
-        await Assert.ThrowsAsync<DomainException>(() => servicio.EliminarAsync(proyecto.Id));
+        var exception = await Assert.ThrowsAsync<DomainException>(() => servicio.EliminarAsync(proyecto.Id));
 
+        Assert.Equal("No se puede eliminar un proyecto que tiene tareas sin completar.", exception.Message);
         Assert.False(proyectos.DeleteCalled);
     }
 
@@ -213,7 +214,7 @@ public sealed class ServiceRequirementTests
     {
         public Tarea? Tarea { get; set; }
         public (int Total, int Completadas) Conteos { get; init; }
-        public bool TienePendientes { get; init; }
+        public bool TieneSinCompletar { get; init; }
         public Tarea? AddedTarea { get; private set; }
         public bool UpdateCalled { get; private set; }
 
@@ -253,10 +254,10 @@ public sealed class ServiceRequirementTests
             Guid ownerId,
             CancellationToken cancellationToken = default) => Task.FromResult(Conteos);
 
-        public Task<bool> TieneTareasPendientesPorProyectoAsync(
+        public Task<bool> TieneTareasSinCompletarPorProyectoAsync(
             Guid proyectoId,
             Guid ownerId,
-            CancellationToken cancellationToken = default) => Task.FromResult(TienePendientes);
+            CancellationToken cancellationToken = default) => Task.FromResult(TieneSinCompletar);
 
         public Task AgregarAsync(Tarea tarea, CancellationToken cancellationToken = default)
         {

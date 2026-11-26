@@ -11,7 +11,7 @@ public interface ITareaRepository
     Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(Guid proyectoId, Guid ownerId, PrioridadTarea prioridad, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(Guid proyectoId, Guid ownerId, DateTime fechaReferencia, CancellationToken cancellationToken = default);
     Task<(int Total, int Completadas)> ObtenerConteosPorProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default);
-    Task<bool> TieneTareasPendientesPorProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default);
+    Task<bool> TieneTareasSinCompletarPorProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default);
     Task AgregarAsync(Tarea tarea, CancellationToken cancellationToken = default);
     Task ActualizarAsync(Tarea tarea, CancellationToken cancellationToken = default);
     Task EliminarAsync(Tarea tarea, CancellationToken cancellationToken = default);

@@ -208,6 +208,58 @@ public sealed class ApiEndpointTests
     }
 
     [Fact]
+    public async Task EliminarProyecto_SoloPermiteVacioOTodasCompletadas()
+    {
+        using var client = await CreateAuthenticatedClientAsync();
+
+        var emptyProject = await CreateProjectAsync(client, $"Vacío-{Guid.NewGuid():N}");
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/proyectos/{emptyProject.Id}")).StatusCode);
+
+        var completedProject = await CreateProjectAsync(client, $"Completado-{Guid.NewGuid():N}");
+        var completedTask = await CreateTaskAsync(client, completedProject.Id, "Completada");
+        Assert.Equal(HttpStatusCode.OK, (await client.PatchAsJsonAsync($"/api/tareas/{completedTask.Id}/estado", new { estado = "completada" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/proyectos/{completedProject.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/tareas/{completedTask.Id}")).StatusCode);
+
+        foreach (var states in new[]
+                 {
+                     new[] { "pendiente" },
+                     new[] { "progreso" },
+                     new[] { "completada", "progreso" }
+                 })
+        {
+            var blockedProject = await CreateProjectAsync(client, $"Bloqueado-{Guid.NewGuid():N}");
+            var tasks = new List<TareaResponseDto>();
+            foreach (var state in states)
+            {
+                var task = await CreateTaskAsync(client, blockedProject.Id, $"{state}-{Guid.NewGuid():N}");
+                if (state != "pendiente")
+                    Assert.Equal(HttpStatusCode.OK, (await client.PatchAsJsonAsync($"/api/tareas/{task.Id}/estado", new { estado = state })).StatusCode);
+                tasks.Add(task);
+            }
+
+            var blocked = await client.DeleteAsync($"/api/proyectos/{blockedProject.Id}");
+            Assert.Equal(HttpStatusCode.BadRequest, blocked.StatusCode);
+            Assert.Contains("No se puede eliminar un proyecto que tiene tareas sin completar.", await blocked.Content.ReadAsStringAsync());
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/proyectos/{blockedProject.Id}")).StatusCode);
+            foreach (var task in tasks)
+                Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/tareas/{task.Id}")).StatusCode);
+        }
+
+        var projectWithCompleted = await CreateProjectAsync(client, $"Solo completadas-{Guid.NewGuid():N}");
+        var completed = await CreateTaskAsync(client, projectWithCompleted.Id, "Completada local");
+        await client.PatchAsJsonAsync($"/api/tareas/{completed.Id}/estado", new { estado = "completada" });
+        var otherProject = await CreateProjectAsync(client, $"Otro proyecto-{Guid.NewGuid():N}");
+        var inProgressElsewhere = await CreateTaskAsync(client, otherProject.Id, "En progreso ajena");
+        await client.PatchAsJsonAsync($"/api/tareas/{inProgressElsewhere.Id}/estado", new { estado = "progreso" });
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/proyectos/{projectWithCompleted.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/tareas/{completed.Id}")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await client.DeleteAsync($"/api/proyectos/{Guid.NewGuid()}")).StatusCode);
+    }
+
+    [Fact]
     public async Task ProyectoSinDueño_NoEsVisibleParaNingunUsuario()
     {
         using var client = await CreateAuthenticatedClientAsync();
