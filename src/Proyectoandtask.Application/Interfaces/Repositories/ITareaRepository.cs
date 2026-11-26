@@ -10,6 +10,8 @@ public interface ITareaRepository
     Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(Guid proyectoId, EstadoTarea estado, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(Guid proyectoId, PrioridadTarea prioridad, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(Guid proyectoId, DateTime fechaReferencia, CancellationToken cancellationToken = default);
+    Task<(int Total, int Completadas)> ObtenerConteosPorProyectoAsync(Guid proyectoId, CancellationToken cancellationToken = default);
+    Task<bool> TieneTareasPendientesPorProyectoAsync(Guid proyectoId, CancellationToken cancellationToken = default);
     Task AgregarAsync(Tarea tarea, CancellationToken cancellationToken = default);
     Task ActualizarAsync(Tarea tarea, CancellationToken cancellationToken = default);
     Task EliminarAsync(Tarea tarea, CancellationToken cancellationToken = default);
