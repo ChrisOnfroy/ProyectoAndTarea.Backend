@@ -25,6 +25,14 @@ public sealed class ApiPostgreSqlFixture : IAsyncLifetime
 
     public ApiWebApplicationFactory Factory { get; private set; } = null!;
 
+    public ApplicationDbContext CreateContext()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(_database.GetConnectionString())
+            .Options;
+        return new ApplicationDbContext(options);
+    }
+
     public async Task InitializeAsync()
     {
         await _database.StartAsync();

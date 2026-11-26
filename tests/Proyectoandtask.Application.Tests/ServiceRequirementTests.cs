@@ -16,7 +16,7 @@ public sealed class ServiceRequirementTests
         var proyectos = new FakeProyectoRepository();
         var tareas = new FakeTareaRepository();
         var unidadDeTrabajo = new FakeUnitOfWork(proyectos, tareas);
-        var servicio = new ProyectoService(proyectos, tareas, unidadDeTrabajo);
+        var servicio = new ProyectoService(proyectos, tareas, unidadDeTrabajo, new FakeCurrentUser());
         var fechaInicio = DateTime.UtcNow.Date;
         var request = new ProyectoRequestDto
         {
@@ -31,6 +31,7 @@ public sealed class ServiceRequirementTests
         Assert.Equal(fechaInicio, resultado.FechaInicio);
         Assert.Equal(fechaInicio.AddDays(5), resultado.FechaFinalizacion);
         Assert.NotNull(proyectos.AddedProyecto);
+        Assert.Equal(FakeCurrentUser.TestUserId, proyectos.AddedProyecto.OwnerId);
         Assert.Equal(1, unidadDeTrabajo.SaveChangesCount);
     }
 
@@ -39,7 +40,7 @@ public sealed class ServiceRequirementTests
     {
         var proyectos = new FakeProyectoRepository { NombreExiste = true };
         var tareas = new FakeTareaRepository();
-        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas));
+        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas), new FakeCurrentUser());
         var fechaInicio = DateTime.UtcNow.Date;
         var request = new ProyectoRequestDto
         {
@@ -58,7 +59,7 @@ public sealed class ServiceRequirementTests
     {
         var proyectos = new FakeProyectoRepository();
         var tareas = new FakeTareaRepository();
-        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas));
+        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas), new FakeCurrentUser());
         var fechaInicio = DateTime.UtcNow.Date;
         var request = new ProyectoRequestDto
         {
@@ -79,7 +80,7 @@ public sealed class ServiceRequirementTests
         var proyectos = new FakeProyectoRepository { Proyecto = proyecto };
         var tareas = new FakeTareaRepository();
         var unidadDeTrabajo = new FakeUnitOfWork(proyectos, tareas);
-        var servicio = new TareaService(tareas, proyectos, unidadDeTrabajo);
+        var servicio = new TareaService(tareas, proyectos, unidadDeTrabajo, new FakeCurrentUser());
         var request = new TareaRequestDto
         {
             Name = "  Tarea de prueba  ",
@@ -99,7 +100,7 @@ public sealed class ServiceRequirementTests
     {
         var proyectos = new FakeProyectoRepository();
         var tareas = new FakeTareaRepository();
-        var servicio = new TareaService(tareas, proyectos, new FakeUnitOfWork(proyectos, tareas));
+        var servicio = new TareaService(tareas, proyectos, new FakeUnitOfWork(proyectos, tareas), new FakeCurrentUser());
         var request = new TareaRequestDto
         {
             Name = "Tarea de prueba",
@@ -117,7 +118,7 @@ public sealed class ServiceRequirementTests
         var proyecto = new Proyecto { Id = Guid.NewGuid() };
         var proyectos = new FakeProyectoRepository { Proyecto = proyecto };
         var tareas = new FakeTareaRepository { Conteos = (4, 3) };
-        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas));
+        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas), new FakeCurrentUser());
 
         var avance = await servicio.ObtenerAvancePorcentajeAsync(proyecto.Id);
 
@@ -130,7 +131,7 @@ public sealed class ServiceRequirementTests
         var proyecto = new Proyecto { Id = Guid.NewGuid() };
         var proyectos = new FakeProyectoRepository { Proyecto = proyecto };
         var tareas = new FakeTareaRepository { Conteos = (0, 0) };
-        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas));
+        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas), new FakeCurrentUser());
 
         var avance = await servicio.ObtenerAvancePorcentajeAsync(proyecto.Id);
 
@@ -143,7 +144,7 @@ public sealed class ServiceRequirementTests
         var proyecto = new Proyecto { Id = Guid.NewGuid() };
         var proyectos = new FakeProyectoRepository { Proyecto = proyecto };
         var tareas = new FakeTareaRepository { TienePendientes = true };
-        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas));
+        var servicio = new ProyectoService(proyectos, tareas, new FakeUnitOfWork(proyectos, tareas), new FakeCurrentUser());
 
         await Assert.ThrowsAsync<DomainException>(() => servicio.EliminarAsync(proyecto.Id));
 
@@ -156,7 +157,7 @@ public sealed class ServiceRequirementTests
         var tarea = new Tarea { Id = Guid.NewGuid() };
         var tareas = new FakeTareaRepository { Tarea = tarea };
         var proyectos = new FakeProyectoRepository();
-        var servicio = new TareaService(tareas, proyectos, new FakeUnitOfWork(proyectos, tareas));
+        var servicio = new TareaService(tareas, proyectos, new FakeUnitOfWork(proyectos, tareas), new FakeCurrentUser());
 
         var resultado = await servicio.CambiarEstadoAsync(tarea.Id, EstadoTarea.completada);
 
@@ -174,17 +175,18 @@ public sealed class ServiceRequirementTests
         public bool UpdateCalled { get; private set; }
         public bool DeleteCalled { get; private set; }
 
-        public Task<Proyecto?> GetProyectoAsync(Guid proyectoId, CancellationToken cancellationToken = default)
+        public Task<Proyecto?> GetProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(Proyecto?.Id == proyectoId ? Proyecto : null);
         }
 
         public Task<bool> ExistsByNameAsync(
             string name,
+            Guid ownerId,
             Guid? excludeProyectoId = null,
             CancellationToken cancellationToken = default) => Task.FromResult(NombreExiste);
 
-        public Task<IReadOnlyList<Proyecto>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<Proyecto>> GetAllAsync(Guid ownerId, CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Proyecto>>(Array.Empty<Proyecto>());
 
         public Task AddAsync(Proyecto proyecto, CancellationToken cancellationToken = default)
@@ -215,39 +217,45 @@ public sealed class ServiceRequirementTests
         public Tarea? AddedTarea { get; private set; }
         public bool UpdateCalled { get; private set; }
 
-        public Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, CancellationToken cancellationToken = default) =>
+        public Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, Guid ownerId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Tarea?.Id == tareaId ? Tarea : null);
 
         public Task<IReadOnlyList<Tarea>> ObtenerPorProyectoAsync(
             Guid proyectoId,
+            Guid ownerId,
             string? name = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Tarea>>(Array.Empty<Tarea>());
 
         public Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(
             Guid proyectoId,
+            Guid ownerId,
             EstadoTarea estado,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Tarea>>(Array.Empty<Tarea>());
 
         public Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(
             Guid proyectoId,
+            Guid ownerId,
             PrioridadTarea prioridad,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Tarea>>(Array.Empty<Tarea>());
 
         public Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(
             Guid proyectoId,
+            Guid ownerId,
             DateTime fechaReferencia,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<Tarea>>(Array.Empty<Tarea>());
 
         public Task<(int Total, int Completadas)> ObtenerConteosPorProyectoAsync(
             Guid proyectoId,
+            Guid ownerId,
             CancellationToken cancellationToken = default) => Task.FromResult(Conteos);
 
         public Task<bool> TieneTareasPendientesPorProyectoAsync(
             Guid proyectoId,
+            Guid ownerId,
             CancellationToken cancellationToken = default) => Task.FromResult(TienePendientes);
 
         public Task AgregarAsync(Tarea tarea, CancellationToken cancellationToken = default)
@@ -277,5 +285,11 @@ public sealed class ServiceRequirementTests
             SaveChangesCount++;
             return Task.FromResult(1);
         }
+    }
+
+    private sealed class FakeCurrentUser : ICurrentUser
+    {
+        public static Guid TestUserId { get; } = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        public Guid UserId => TestUserId;
     }
 }

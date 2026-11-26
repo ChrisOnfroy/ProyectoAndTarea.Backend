@@ -15,21 +15,22 @@ public class ProyectoRepository : IProyectoRepository
     }
 
 
-    public Task<Proyecto?> GetProyectoAsync(Guid proyectoId, CancellationToken cancellationToken = default)
+    public Task<Proyecto?> GetProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default)
     {
         return _context.Proyectos
-            .FirstOrDefaultAsync(proyecto => proyecto.Id == proyectoId, cancellationToken);
+            .FirstOrDefaultAsync(proyecto => proyecto.Id == proyectoId && proyecto.OwnerId == ownerId, cancellationToken);
     }
 
     public async Task<bool> ExistsByNameAsync(
         string name,
+        Guid ownerId,
         Guid? excludeProyectoId = null,
         CancellationToken cancellationToken = default)
     {
         var nombreNormalizado = name.Trim();
         var query = _context.Proyectos
             .AsNoTracking()
-            .Where(proyecto => proyecto.Name == nombreNormalizado);
+            .Where(proyecto => proyecto.OwnerId == ownerId && proyecto.Name == nombreNormalizado);
 
         if (excludeProyectoId.HasValue)
         {
@@ -39,10 +40,11 @@ public class ProyectoRepository : IProyectoRepository
         return await query.AnyAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Proyecto>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Proyecto>> GetAllAsync(Guid ownerId, CancellationToken cancellationToken = default)
     {
         return await _context.Proyectos
             .AsNoTracking()
+            .Where(proyecto => proyecto.OwnerId == ownerId)
             .ToListAsync(cancellationToken);
     }
 
