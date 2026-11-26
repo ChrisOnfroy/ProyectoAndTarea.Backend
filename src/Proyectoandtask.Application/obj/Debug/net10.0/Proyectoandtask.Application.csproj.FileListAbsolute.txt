@@ -13,3 +13,4 @@
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/refint/Proyectoandtask.Application.dll
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.pdb
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/ref/Proyectoandtask.Application.dll
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.sourcelink.json
