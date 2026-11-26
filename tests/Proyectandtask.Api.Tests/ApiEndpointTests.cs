@@ -293,12 +293,14 @@ public sealed class ApiEndpointTests
             Assert.True((await userManager.AddToRoleAsync(adminUser, ApplicationRoles.Admin)).Succeeded);
         }
 
+        var loginClient = _fixture.Factory.CreateClient();
         using var loginClient = _fixture.Factory.CreateClient();
         var login = await loginClient.PostAsJsonAsync("/api/auth/login", new
         {
             email = adminEmail,
             password = "Integration_Test!Pass123"
         });
+        var loginBody = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
         using var loginBody = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
         loginClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer", loginBody.RootElement.GetProperty("accessToken").GetString());
@@ -308,6 +310,8 @@ public sealed class ApiEndpointTests
         Assert.Equal(HttpStatusCode.NotFound, (await loginClient.PatchAsJsonAsync($"/api/tareas/{task.Id}/estado", new { estado = "completada" })).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await loginClient.DeleteAsync($"/api/tareas/{task.Id}")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await ownerClient.GetAsync($"/api/tareas/{task.Id}")).StatusCode);
+        loginBody.Dispose();
+        loginClient.Dispose();
     }
 
     [Fact]

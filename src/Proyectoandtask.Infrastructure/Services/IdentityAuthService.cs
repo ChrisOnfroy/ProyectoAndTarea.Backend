@@ -14,6 +14,7 @@ namespace Proyectoandtask.Infrastructure.Services;
 
 public sealed class IdentityAuthService : IAuthService
 {
+    private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
