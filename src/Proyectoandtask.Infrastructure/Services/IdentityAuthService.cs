@@ -15,15 +15,18 @@ namespace Proyectoandtask.Infrastructure.Services;
 public sealed class IdentityAuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly JwtOptions _jwtOptions;
 
     public IdentityAuthService(
         UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole<Guid>> roleManager,
         SignInManager<ApplicationUser> signInManager,
         JwtOptions jwtOptions)
     {
         _userManager = userManager;
+        _roleManager = roleManager;
         _signInManager = signInManager;
         _jwtOptions = jwtOptions;
     }
@@ -59,6 +62,8 @@ public sealed class IdentityAuthService : IAuthService
             LockoutEnabled = true
         };
 
+        await EnsureUserRoleAsync();
+
         IdentityResult result;
         try
         {
@@ -77,7 +82,24 @@ public sealed class IdentityAuthService : IAuthService
             throw new DomainException(errors);
         }
 
+        var roleResult = await _userManager.AddToRoleAsync(user, ApplicationRoles.User);
+        if (!roleResult.Succeeded)
+        {
+            await _userManager.DeleteAsync(user);
+            throw new DomainException(string.Join(" ", roleResult.Errors.Select(error => error.Description)));
+        }
+
         return await CreateAuthResponseAsync(user);
+    }
+
+    private async Task EnsureUserRoleAsync()
+    {
+        if (await _roleManager.RoleExistsAsync(ApplicationRoles.User))
+            return;
+
+        var result = await _roleManager.CreateAsync(new IdentityRole<Guid>(ApplicationRoles.User));
+        if (!result.Succeeded && !await _roleManager.RoleExistsAsync(ApplicationRoles.User))
+            throw new DomainException(string.Join(" ", result.Errors.Select(error => error.Description)));
     }
 
     private static bool IsEmailUniqueConstraintViolation(Exception exception)

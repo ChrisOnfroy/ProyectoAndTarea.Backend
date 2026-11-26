@@ -11,26 +11,31 @@ public class ProyectoService : IProyectoService
     private readonly IProyectoRepository _proyectoRepository;
     private readonly ITareaRepository _tareaRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUser _currentUser;
 
     public ProyectoService(
         IProyectoRepository proyectoRepository,
         ITareaRepository tareaRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ICurrentUser currentUser)
     {
         _proyectoRepository = proyectoRepository;
         _tareaRepository = tareaRepository;
         _unitOfWork = unitOfWork;
+        _currentUser = currentUser;
     }
 
     public async Task<ProyectoResponseDto> CrearAsync(ProyectoRequestDto request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        var ownerId = _currentUser.UserId;
         ValidarFechas(request.FechaInicio, request.FechaFinalizacion);
         var nombre = ValidarYNormalizarNombre(request.Name);
         ValidarDescripcion(request.Description);
 
         if (await _proyectoRepository.ExistsByNameAsync(
                 nombre,
+                ownerId,
                 cancellationToken: cancellationToken))
         {
             throw new DomainException($"Ya existe un proyecto con el nombre '{nombre}'.");
@@ -39,6 +44,7 @@ public class ProyectoService : IProyectoService
         var proyecto = new Proyecto
         {
             Name = nombre,
+            OwnerId = ownerId,
             Description = request.Description,
             FechaCreacion = DateTime.UtcNow,
             FechaInicio = request.FechaInicio,
@@ -54,13 +60,15 @@ public class ProyectoService : IProyectoService
 
     public async Task<ProyectoResponseDto?> ObtenerPorIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var proyecto = await _proyectoRepository.GetProyectoAsync(id, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        var proyecto = await _proyectoRepository.GetProyectoAsync(id, ownerId, cancellationToken);
         return proyecto is null ? null : MapToDto(proyecto);
     }
 
     public async Task<IReadOnlyList<ProyectoResponseDto>> ObtenerTodosAsync(CancellationToken cancellationToken = default)
     {
-        var proyectos = await _proyectoRepository.GetAllAsync(cancellationToken);
+        var ownerId = _currentUser.UserId;
+        var proyectos = await _proyectoRepository.GetAllAsync(ownerId, cancellationToken);
         return proyectos.Select(MapToDto).ToList();
         
     }
@@ -69,11 +77,12 @@ public class ProyectoService : IProyectoService
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var proyecto = await _proyectoRepository.GetProyectoAsync(id, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        var proyecto = await _proyectoRepository.GetProyectoAsync(id, ownerId, cancellationToken);
         if (proyecto is null)
             return null;
 
-        var (total, completadas) = await _tareaRepository.ObtenerConteosPorProyectoAsync(id, cancellationToken);
+        var (total, completadas) = await _tareaRepository.ObtenerConteosPorProyectoAsync(id, ownerId, cancellationToken);
         if (total == 0)
             return 0m;
 
@@ -83,7 +92,8 @@ public class ProyectoService : IProyectoService
     public async Task<ProyectoResponseDto?> ActualizarAsync(Guid id, ProyectoRequestDto request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var proyecto =  await _proyectoRepository.GetProyectoAsync(id, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        var proyecto =  await _proyectoRepository.GetProyectoAsync(id, ownerId, cancellationToken);
         if (proyecto is null) return null;
         
         ValidarFechas(request.FechaInicio, request.FechaFinalizacion);
@@ -92,6 +102,7 @@ public class ProyectoService : IProyectoService
 
         if (await _proyectoRepository.ExistsByNameAsync(
                 nombre,
+                ownerId,
                 id,
                 cancellationToken))
         {
@@ -114,12 +125,13 @@ public class ProyectoService : IProyectoService
 
     public async Task<bool> EliminarAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var proyecto =  await _proyectoRepository.GetProyectoAsync(id, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        var proyecto =  await _proyectoRepository.GetProyectoAsync(id, ownerId, cancellationToken);
         if (proyecto is null) return false;
 
-        if (await _tareaRepository.TieneTareasPendientesPorProyectoAsync(id, cancellationToken))
+        if (await _tareaRepository.TieneTareasSinCompletarPorProyectoAsync(id, ownerId, cancellationToken))
         {
-            throw new DomainException("No se puede eliminar un proyecto que tiene tareas pendientes.");
+            throw new DomainException("No se puede eliminar un proyecto que tiene tareas sin completar.");
         }
         
         await _proyectoRepository.DeleteAsync(proyecto, cancellationToken);

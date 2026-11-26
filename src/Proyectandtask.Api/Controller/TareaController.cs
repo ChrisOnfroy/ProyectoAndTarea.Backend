@@ -36,7 +36,7 @@ public sealed class TareaController : ControllerBase
         CancellationToken cancellationToken)
     {
         var tareas = await _tareaService.ObtenerPorProyectoAsync(proyectoId, name, cancellationToken);
-        return Ok(tareas);
+        return tareas is null ? NotFound() : Ok(tareas);
     }
 
     [HttpGet("proyecto/{proyectoId:guid}/estado")]
@@ -48,7 +48,7 @@ public sealed class TareaController : ControllerBase
         CancellationToken cancellationToken)
     {
         var tareas = await _tareaService.ObtenerPorEstadoAsync(proyectoId, estado, cancellationToken);
-        return Ok(tareas);
+        return tareas is null ? NotFound() : Ok(tareas);
     }
 
     [HttpGet("proyecto/{proyectoId:guid}/prioridad")]
@@ -60,7 +60,7 @@ public sealed class TareaController : ControllerBase
         CancellationToken cancellationToken)
     {
         var tareas = await _tareaService.ObtenerPorPrioridadAsync(proyectoId, prioridad, cancellationToken);
-        return Ok(tareas);
+        return tareas is null ? NotFound() : Ok(tareas);
     }
 
     [HttpGet("proyecto/{proyectoId:guid}/vencidas")]
@@ -75,7 +75,7 @@ public sealed class TareaController : ControllerBase
             proyectoId,
             fechaReferencia ?? DateTime.UtcNow,
             cancellationToken);
-        return Ok(tareas);
+        return tareas is null ? NotFound() : Ok(tareas);
     }
 
     [HttpPost]

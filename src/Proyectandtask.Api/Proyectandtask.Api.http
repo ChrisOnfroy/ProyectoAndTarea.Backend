@@ -1,6 +1,74 @@
 @Proyectandtask.Api_HostAddress = http://localhost:5000
+@token = REEMPLAZA_CON_EL_ACCESS_TOKEN
+@proyectoId = REEMPLAZA_CON_UUID
+@tareaId = REEMPLAZA_CON_UUID
 
-GET {{Proyectandtask.Api_HostAddress}}/weatherforecast/
+### Health check de API y PostgreSQL
+GET {{Proyectandtask.Api_HostAddress}}/health
 Accept: application/json
 
-###
+### Registrar usuario; la aplicación asigna el rol Usuario
+POST {{Proyectandtask.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "userName": "usuario-demo",
+  "email": "usuario-demo@example.com",
+  "password": "Cambiar_Esta!Clave123"
+}
+
+### Iniciar sesión
+POST {{Proyectandtask.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "usuario-demo@example.com",
+  "password": "Cambiar_Esta!Clave123"
+}
+
+### Listar proyectos propios
+GET {{Proyectandtask.Api_HostAddress}}/api/proyectos
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Crear proyecto propio
+POST {{Proyectandtask.Api_HostAddress}}/api/proyectos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Proyecto de prueba",
+  "description": "Proyecto creado desde el archivo HTTP",
+  "fechaInicio": "2026-11-26T00:00:00Z",
+  "fechaFinalizacion": "2026-12-10T00:00:00Z"
+}
+
+### Consultar proyecto
+GET {{Proyectandtask.Api_HostAddress}}/api/proyectos/{{proyectoId}}
+Authorization: Bearer {{token}}
+
+### Crear tarea
+POST {{Proyectandtask.Api_HostAddress}}/api/tareas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Tarea de prueba",
+  "description": "Tarea del proyecto propio",
+  "proyectoId": "{{proyectoId}}",
+  "estadoTarea": "pendiente",
+  "prioridadTarea": "Media"
+}
+
+### Consultar tareas del proyecto
+GET {{Proyectandtask.Api_HostAddress}}/api/tareas/proyecto/{{proyectoId}}
+Authorization: Bearer {{token}}
+
+### Cambiar estado de tarea
+PATCH {{Proyectandtask.Api_HostAddress}}/api/tareas/{{tareaId}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estado": "completada"
+}

@@ -16,17 +16,18 @@ public class TareaRepository : ITareaRepository
         _context = context;
     }
     
-    public Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, CancellationToken cancellationToken = default)
+    public Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, Guid ownerId, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return _context.Tareas
+            .Where(t => includeAllOwners || (t.Proyecto != null && t.Proyecto.OwnerId == ownerId))
             .FirstOrDefaultAsync(t => t.Id == tareaId, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Tarea>> ObtenerPorProyectoAsync(Guid proyectoId, string? name = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Tarea>> ObtenerPorProyectoAsync(Guid proyectoId, Guid ownerId, string? name = null, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         var query = _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId);
+            .Where(tarea => tarea.ProyectoId == proyectoId && (includeAllOwners || (tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)));
 
         if (!string.IsNullOrWhiteSpace(name))
         {
@@ -37,28 +38,28 @@ public class TareaRepository : ITareaRepository
         return await query.ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(Guid proyectoId, EstadoTarea estado, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(Guid proyectoId, Guid ownerId, EstadoTarea estado, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return await _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId && tarea.EstadoTarea == estado)
+            .Where(tarea => tarea.ProyectoId == proyectoId && (includeAllOwners || (tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)) && tarea.EstadoTarea == estado)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(Guid proyectoId, PrioridadTarea prioridad, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(Guid proyectoId, Guid ownerId, PrioridadTarea prioridad, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return await _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId && tarea.PrioridadTarea == prioridad)
+            .Where(tarea => tarea.ProyectoId == proyectoId && (includeAllOwners || (tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)) && tarea.PrioridadTarea == prioridad)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(Guid proyectoId, DateTime fechaReferencia,
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(Guid proyectoId, Guid ownerId, DateTime fechaReferencia,
+        CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return await _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId &&
+            .Where(tarea => tarea.ProyectoId == proyectoId && (includeAllOwners || (tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)) &&
                             tarea.FechaLimite.HasValue &&
                             tarea.FechaLimite.Value < fechaReferencia &&
                             tarea.EstadoTarea != EstadoTarea.completada)
@@ -67,11 +68,12 @@ public class TareaRepository : ITareaRepository
 
     public async Task<(int Total, int Completadas)> ObtenerConteosPorProyectoAsync(
         Guid proyectoId,
+        Guid ownerId,
         CancellationToken cancellationToken = default)
     {
         var conteos = await _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId)
+            .Where(tarea => tarea.ProyectoId == proyectoId && tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)
             .GroupBy(tarea => tarea.ProyectoId)
             .Select(grupo => new
             {
@@ -83,14 +85,15 @@ public class TareaRepository : ITareaRepository
         return conteos is null ? (0, 0) : (conteos.Total, conteos.Completadas);
     }
 
-    public Task<bool> TieneTareasPendientesPorProyectoAsync(
+    public Task<bool> TieneTareasSinCompletarPorProyectoAsync(
         Guid proyectoId,
+        Guid ownerId,
         CancellationToken cancellationToken = default)
     {
         return _context.Tareas
             .AsNoTracking()
             .AnyAsync(
-                tarea => tarea.ProyectoId == proyectoId && tarea.EstadoTarea == EstadoTarea.pendiente,
+                tarea => tarea.ProyectoId == proyectoId && tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId && tarea.EstadoTarea != EstadoTarea.completada,
                 cancellationToken);
     }
 

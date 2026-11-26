@@ -12,26 +12,30 @@ public class TareaService : ITareaService
     private readonly ITareaRepository _tareaRepository;
     private readonly IProyectoRepository _proyectoRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUser _currentUser;
 
     public TareaService(
         ITareaRepository tareaRepository,
         IProyectoRepository proyectoRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ICurrentUser currentUser)
     {
         _tareaRepository = tareaRepository;
         _proyectoRepository = proyectoRepository;
         _unitOfWork = unitOfWork;
+        _currentUser = currentUser;
     }
 
     public async Task<TareaResponseDto> CrearAsync(TareaRequestDto request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        var ownerId = _currentUser.UserId;
         var nombre = ValidarYNormalizarNombre(request.Name);
         ValidarDescripcion(request.Description);
         ValidarFechaLimite(request.FechaLimite);
         ValidarEstado(request.EstadoTarea);
         ValidarPrioridad(request.PrioridadTarea);
-        await ValidarProyectoAsync(request.ProyectoId, cancellationToken);
+        await ValidarProyectoAsync(request.ProyectoId, ownerId, cancellationToken);
 
         var tarea = new Tarea
         {
@@ -51,7 +55,8 @@ public class TareaService : ITareaService
 
     public async Task<TareaResponseDto?> ObtenerPorIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, ownerId, cancellationToken, _currentUser.IsAdmin);
         return tarea is null ? null : MapToDto(tarea);
     }
 
@@ -60,9 +65,10 @@ public class TareaService : ITareaService
         EstadoTarea estado,
         CancellationToken cancellationToken = default)
     {
+        var ownerId = _currentUser.UserId;
         ValidarEstado(estado);
 
-        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, cancellationToken);
+        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, ownerId, cancellationToken);
         if (tarea is null)
             return null;
 
@@ -75,48 +81,63 @@ public class TareaService : ITareaService
         return MapToDto(tarea);
     }
 
-    public async Task<IReadOnlyList<TareaResponseDto>> ObtenerPorProyectoAsync(
+    public async Task<IReadOnlyList<TareaResponseDto>?> ObtenerPorProyectoAsync(
         Guid proyectoId,
         string? name = null,
         CancellationToken cancellationToken = default)
     {
+        var ownerId = _currentUser.UserId;
+        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken, _currentUser.IsAdmin) is null)
+            return null;
         var nombre = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
-        var tareas = await _tareaRepository.ObtenerPorProyectoAsync(proyectoId, nombre, cancellationToken);
+        var tareas = await _tareaRepository.ObtenerPorProyectoAsync(proyectoId, ownerId, nombre, cancellationToken, _currentUser.IsAdmin);
         return tareas.Select(MapToDto).ToList();
     }
 
-    public async Task<IReadOnlyList<TareaResponseDto>> ObtenerPorEstadoAsync(
+    public async Task<IReadOnlyList<TareaResponseDto>?> ObtenerPorEstadoAsync(
         Guid proyectoId,
         EstadoTarea estado,
         CancellationToken cancellationToken = default)
     {
         ValidarEstado(estado);
-        var tareas = await _tareaRepository.ObtenerPorEstadoAsync(proyectoId, estado, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken, _currentUser.IsAdmin) is null)
+            return null;
+        var tareas = await _tareaRepository.ObtenerPorEstadoAsync(proyectoId, ownerId, estado, cancellationToken, _currentUser.IsAdmin);
         return tareas.Select(MapToDto).ToList();
     }
 
-    public async Task<IReadOnlyList<TareaResponseDto>> ObtenerPorPrioridadAsync(
+    public async Task<IReadOnlyList<TareaResponseDto>?> ObtenerPorPrioridadAsync(
         Guid proyectoId,
         PrioridadTarea prioridad,
         CancellationToken cancellationToken = default)
     {
         ValidarPrioridad(prioridad);
-        var tareas = await _tareaRepository.ObtenerPorPrioridadAsync(proyectoId, prioridad, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken, _currentUser.IsAdmin) is null)
+            return null;
+        var tareas = await _tareaRepository.ObtenerPorPrioridadAsync(proyectoId, ownerId, prioridad, cancellationToken, _currentUser.IsAdmin);
         return tareas.Select(MapToDto).ToList();
     }
 
-    public async Task<IReadOnlyList<TareaResponseDto>> ObtenerVencidasNoCompletadasAsync(
+    public async Task<IReadOnlyList<TareaResponseDto>?> ObtenerVencidasNoCompletadasAsync(
         Guid proyectoId,
         DateTime fechaReferencia,
         CancellationToken cancellationToken = default)
     {
+        var ownerId = _currentUser.UserId;
+        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken, _currentUser.IsAdmin) is null)
+            return null;
+
         if (fechaReferencia == DateTime.MinValue)
             throw new DomainException("La fecha de referencia debe ser válida.");
 
         var tareas = await _tareaRepository.ObtenerVencidasNoCompletadasAsync(
             proyectoId,
+            ownerId,
             fechaReferencia,
-            cancellationToken);
+            cancellationToken,
+            _currentUser.IsAdmin);
         return tareas.Select(MapToDto).ToList();
     }
 
@@ -126,7 +147,8 @@ public class TareaService : ITareaService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, ownerId, cancellationToken);
         if (tarea is null)
             return null;
 
@@ -135,7 +157,7 @@ public class TareaService : ITareaService
         ValidarFechaLimite(request.FechaLimite);
         ValidarEstado(request.EstadoTarea);
         ValidarPrioridad(request.PrioridadTarea);
-        await ValidarProyectoAsync(request.ProyectoId, cancellationToken);
+        await ValidarProyectoAsync(request.ProyectoId, ownerId, cancellationToken);
 
         tarea.Name = nombre;
         tarea.Description = request.Description;
@@ -153,7 +175,8 @@ public class TareaService : ITareaService
 
     public async Task<bool> EliminarAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, cancellationToken);
+        var ownerId = _currentUser.UserId;
+        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, ownerId, cancellationToken);
         if (tarea is null)
             return false;
 
@@ -162,10 +185,10 @@ public class TareaService : ITareaService
         return true;
     }
 
-    private async Task ValidarProyectoAsync(Guid proyectoId, CancellationToken cancellationToken)
+    private async Task ValidarProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken)
     {
         if (proyectoId == Guid.Empty ||
-            await _proyectoRepository.GetProyectoAsync(proyectoId, cancellationToken) is null)
+            await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken) is null)
         {
             throw new DomainException("El proyecto indicado no existe.");
         }

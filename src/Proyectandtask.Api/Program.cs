@@ -1,13 +1,17 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 using proyectandtask.Domain.Exceptions;
 using Proyectandtask.Api;
 using Proyectoandtask.Application;
 using Proyectoandtask.Infrastructure;
 using Proyectoandtask.Infrastructure.Identity;
+using Proyectoandtask.Infrastructure.Services;
+using Proyectoandtask.Application.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +26,12 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddApplicationServices();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddInfrastructureServices(connectionString, jwtOptions);
+builder.Services.AddHealthChecks()
+    .AddCheck<PostgreSqlHealthCheck>("postgresql");
+builder.Services.AddScoped<DemoDataSeeder>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -44,15 +53,21 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+await using (var scope = app.Services.CreateAsyncScope())
+    await scope.ServiceProvider.GetRequiredService<DemoDataSeeder>().SeedAsync();
+
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 {
     var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    var isUnauthorized = exception is UnauthorizedAccessException;
     var isClientError = exception is DomainException or ArgumentException;
-    var statusCode = isClientError
-        ? StatusCodes.Status400BadRequest
-        : StatusCodes.Status500InternalServerError;
+    var statusCode = isUnauthorized
+        ? StatusCodes.Status401Unauthorized
+        : isClientError
+            ? StatusCodes.Status400BadRequest
+            : StatusCodes.Status500InternalServerError;
 
-    if (!isClientError && exception is not null)
+    if (!isClientError && !isUnauthorized && exception is not null)
     {
         app.Logger.LogError(exception, "Error no controlado al procesar la solicitud.");
     }
@@ -62,10 +77,12 @@ app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
     await context.Response.WriteAsJsonAsync(new ProblemDetails
     {
         Status = statusCode,
-        Title = isClientError ? "Solicitud inválida" : "Error interno del servidor",
-        Detail = isClientError
-            ? exception?.Message
-            : "Ocurrió un error inesperado al procesar la solicitud."
+        Title = isUnauthorized
+            ? "No autorizado"
+            : isClientError ? "Solicitud inválida" : "Error interno del servidor",
+        Detail = isUnauthorized
+            ? "El token no contiene un identificador de usuario válido."
+            : isClientError ? exception?.Message : "Ocurrió un error inesperado al procesar la solicitud."
     }, JsonSerializerOptions.Web, "application/problem+json");
 }));
 
@@ -73,8 +90,31 @@ app.UseHttpsRedirection();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true &&
+        (!Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) || userId == Guid.Empty))
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return;
+    }
+
+    await next();
+});
 app.UseAuthorization();
 app.MapGet("/", () => Results.Redirect("/swagger"));
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.ToDictionary(entry => entry.Key, entry => entry.Value.Status.ToString())
+        });
+    }
+});
 app.MapControllers();
 
 app.Run();
