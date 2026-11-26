@@ -9,3 +9,4 @@
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectandtask.Domain/obj/Debug/net10.0/refint/Proyectandtask.Domain.dll
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectandtask.Domain/obj/Debug/net10.0/Proyectandtask.Domain.pdb
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectandtask.Domain/obj/Debug/net10.0/ref/Proyectandtask.Domain.dll
+/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectandtask.Domain/obj/Debug/net10.0/Proyectandtask.Domain.sourcelink.json
