@@ -246,12 +246,15 @@ namespace Proyectoandtask.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("citext");
 
+                    b.Property<Guid?>("OwnerId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("OwnerId", "Name")
                         .IsUnique()
                         .HasDatabaseName("IX_Proyectos_Name");
 
@@ -347,6 +350,14 @@ namespace Proyectoandtask.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("proyectandtask.Domain.Entities.Proyecto", b =>
+                {
+                    b.HasOne("Proyectoandtask.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("proyectandtask.Domain.Entities.Tarea", b =>
