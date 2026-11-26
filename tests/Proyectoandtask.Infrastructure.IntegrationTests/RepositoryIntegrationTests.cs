@@ -20,13 +20,14 @@ public sealed class RepositoryIntegrationTests
     public async Task ProyectoRepository_PersisteYConsultaProyecto()
     {
         await using var context = _fixture.CreateContext();
+        var ownerId = await CreateOwnerAsync(context);
         var repository = new ProyectoRepository(context);
-        var proyecto = CreateProject();
+        var proyecto = CreateProject(ownerId);
 
         await repository.AddAsync(proyecto);
         await context.SaveChangesAsync();
 
-        var result = await repository.GetProyectoAsync(proyecto.Id);
+        var result = await repository.GetProyectoAsync(proyecto.Id, ownerId);
 
         Assert.NotNull(result);
         Assert.Equal(proyecto.Id, result.Id);
@@ -37,13 +38,14 @@ public sealed class RepositoryIntegrationTests
     public async Task ProyectoRepository_ComparaNombresSinDistinguirMayusculas()
     {
         await using var context = _fixture.CreateContext();
+        var ownerId = await CreateOwnerAsync(context);
         var repository = new ProyectoRepository(context);
-        var proyecto = CreateProject();
+        var proyecto = CreateProject(ownerId);
 
         await repository.AddAsync(proyecto);
         await context.SaveChangesAsync();
 
-        var exists = await repository.ExistsByNameAsync(proyecto.Name.ToUpperInvariant());
+        var exists = await repository.ExistsByNameAsync(proyecto.Name.ToUpperInvariant(), ownerId);
 
         Assert.True(exists);
     }
@@ -52,7 +54,8 @@ public sealed class RepositoryIntegrationTests
     public async Task TareaRepository_BuscaNombreParcialSinDistinguirMayusculas()
     {
         await using var context = _fixture.CreateContext();
-        var proyecto = CreateProject();
+        var ownerId = await CreateOwnerAsync(context);
+        var proyecto = CreateProject(ownerId);
         await context.Proyectos.AddAsync(proyecto);
         var tareaCoincidente = CreateTask(proyecto.Id, "Diseño de módulo");
         var tareaNoCoincidente = CreateTask(proyecto.Id, "Revisar documentación");
@@ -62,7 +65,7 @@ public sealed class RepositoryIntegrationTests
         await repository.AgregarAsync(tareaNoCoincidente);
         await context.SaveChangesAsync();
 
-        var result = await repository.ObtenerPorProyectoAsync(proyecto.Id, "DISEÑO");
+        var result = await repository.ObtenerPorProyectoAsync(proyecto.Id, ownerId, "DISEÑO");
 
         var tarea = Assert.Single(result);
         Assert.Equal(tareaCoincidente.Id, tarea.Id);
@@ -72,7 +75,8 @@ public sealed class RepositoryIntegrationTests
     public async Task TareaRepository_FiltraPorEstadoPrioridadVencimientoYCuentaAvance()
     {
         await using var context = _fixture.CreateContext();
-        var proyecto = CreateProject();
+        var ownerId = await CreateOwnerAsync(context);
+        var proyecto = CreateProject(ownerId);
         await context.Proyectos.AddAsync(proyecto);
 
         var vencidaPendiente = CreateTask(proyecto.Id, "Vencida pendiente");
@@ -96,11 +100,11 @@ public sealed class RepositoryIntegrationTests
         await repository.AgregarAsync(tareaFutura);
         await context.SaveChangesAsync();
 
-        var pendientes = await repository.ObtenerPorEstadoAsync(proyecto.Id, EstadoTarea.pendiente);
-        var altaPrioridad = await repository.ObtenerPorPrioridadAsync(proyecto.Id, PrioridadTarea.Alta);
-        var vencidas = await repository.ObtenerVencidasNoCompletadasAsync(proyecto.Id, DateTime.UtcNow);
-        var conteos = await repository.ObtenerConteosPorProyectoAsync(proyecto.Id);
-        var tienePendientes = await repository.TieneTareasPendientesPorProyectoAsync(proyecto.Id);
+        var pendientes = await repository.ObtenerPorEstadoAsync(proyecto.Id, ownerId, EstadoTarea.pendiente);
+        var altaPrioridad = await repository.ObtenerPorPrioridadAsync(proyecto.Id, ownerId, PrioridadTarea.Alta);
+        var vencidas = await repository.ObtenerVencidasNoCompletadasAsync(proyecto.Id, ownerId, DateTime.UtcNow);
+        var conteos = await repository.ObtenerConteosPorProyectoAsync(proyecto.Id, ownerId);
+        var tienePendientes = await repository.TieneTareasPendientesPorProyectoAsync(proyecto.Id, ownerId);
 
         Assert.Equal(vencidaPendiente.Id, Assert.Single(pendientes).Id);
         Assert.Equal(2, altaPrioridad.Count);
@@ -122,12 +126,22 @@ public sealed class RepositoryIntegrationTests
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
     }
 
-    private static Proyecto CreateProject()
+    private static async Task<Guid> CreateOwnerAsync(Proyectoandtask.Infrastructure.Context.ApplicationDbContext context)
+    {
+        var suffix = Guid.NewGuid().ToString("N");
+        var user = CreateUser($"{suffix}@example.com", suffix);
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+        return user.Id;
+    }
+
+    private static Proyecto CreateProject(Guid ownerId)
     {
         var now = DateTime.UtcNow;
         return new Proyecto
         {
             Name = $"Project-{Guid.NewGuid():N}",
+            OwnerId = ownerId,
             FechaCreacion = now,
             FechaInicio = now,
             FechaFinalizacion = now.AddDays(30)
