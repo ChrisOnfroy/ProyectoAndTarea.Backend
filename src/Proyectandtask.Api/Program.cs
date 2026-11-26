@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 using proyectandtask.Domain.Exceptions;
 using Proyectandtask.Api;
@@ -28,6 +29,8 @@ builder.Services.AddApplicationServices();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddInfrastructureServices(connectionString, jwtOptions);
+builder.Services.AddHealthChecks()
+    .AddCheck<PostgreSqlHealthCheck>("postgresql");
 builder.Services.AddScoped<DemoDataSeeder>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -100,6 +103,18 @@ app.Use(async (context, next) =>
 });
 app.UseAuthorization();
 app.MapGet("/", () => Results.Redirect("/swagger"));
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.ToDictionary(entry => entry.Key, entry => entry.Value.Status.ToString())
+        });
+    }
+});
 app.MapControllers();
 
 app.Run();

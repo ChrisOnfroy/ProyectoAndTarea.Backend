@@ -24,12 +24,14 @@
 
 | | Módulo | Qué permite |
 |:-:|---|---|
-| 🔐 | **Autenticación** | Registro e inicio de sesión con ASP.NET Core Identity y tokens JWT. |
+| 🔐 | **Autenticación** | Registro e inicio de sesión con ASP.NET Core Identity y tokens JWT. Cada cuenta nueva recibe el rol `Usuario`. |
 | 📁 | **Proyectos** | Crear, listar, consultar, editar y eliminar proyectos con fechas de inicio y finalización. |
+| 👥 | **Privacidad** | Cada usuario solo accede a sus propios proyectos y tareas. |
 | ✅ | **Tareas** | CRUD de tareas asociadas a un proyecto y cambio rápido de estado. |
 | 🔎 | **Filtros** | Buscar tareas por nombre, estado, prioridad o vencimiento. |
 | 📊 | **Avance** | Porcentaje de tareas completadas de cada proyecto. |
 | 🛡️ | **Errores** | Reglas de negocio y errores no controlados en formato `ProblemDetails`. |
+| 💓 | **Salud** | `/health` informa si la API puede conectarse a PostgreSQL. |
 
 ### Flujo de uso
 
@@ -63,6 +65,7 @@ flowchart LR
 | Pruebas de integración | Testcontainers for PostgreSQL | 4.17.0 |
 | Pruebas HTTP | `Microsoft.AspNetCore.Mvc.Testing` | 10.0.15 |
 | Cobertura | `coverlet.collector` | 6.0.4 |
+| Monitoreo | ASP.NET Core Health Checks | 10 |
 | CI/CD y hosting | GitHub Actions → Azure Web App | — |
 
 ---
@@ -96,7 +99,7 @@ flowchart TD
     class DOM dom
 ```
 
-**Patrones:** Repository, Unit of Work, capa de servicios, DTOs e inyección de dependencias. Cada capa registra sus servicios con un método de extensión (`AddApplicationServices` y `AddInfrastructureServices`).
+**Patrones:** Repository, Unit of Work, capa de servicios, DTOs e inyección de dependencias. La identidad del usuario llega a los servicios mediante `ICurrentUser`, implementada en la API. Cada capa registra sus servicios con un método de extensión (`AddApplicationServices` y `AddInfrastructureServices`).
 
 <details>
 <summary><b>📂 Ver estructura de carpetas</b></summary>
@@ -104,7 +107,8 @@ flowchart TD
 ```text
 .
 ├── .github/workflows/                  # Pipeline de CI/CD
-├── docs/                               # Recursos de documentación
+├── docs/                               # Banner y script SQL de propietarios
+├── publish/                            # Salida de compilación versionada
 ├── src/
 │   ├── Proyectandtask.Api/             # Controller/, Program.cs, configuración
 │   ├── Proyectoandtask.Application/    # Dtos/, Interfaces/, Services/
@@ -130,10 +134,12 @@ flowchart TD
 
 ```mermaid
 erDiagram
+    USUARIO |o--o{ PROYECTO : posee
     PROYECTO ||--o{ TAREA : contiene
     PROYECTO {
         uuid Id PK
-        citext Name UK "máx. 200"
+        uuid OwnerId FK "propietario"
+        citext Name "único por propietario, máx. 200"
         string Description "opcional, máx. 1000"
         datetime FechaCreacion
         datetime FechaInicio
@@ -166,16 +172,17 @@ La prioridad es opcional. El número de `PrioridadTarea` **no indica orden de im
 
 ### 📏 Reglas de negocio
 
-- El nombre de un proyecto es **obligatorio y único**, sin distinguir mayúsculas. Se recortan los espacios de los extremos.
+- Cada proyecto nuevo queda asignado al usuario que lo crea. **Solo su propietario** puede verlo o modificarlo, junto con sus tareas.
+- El nombre de un proyecto es **obligatorio y único por usuario**, sin distinguir mayúsculas. Se recortan los espacios de los extremos.
 - La fecha de finalización **no puede ser anterior** a la de inicio.
 - Toda tarea debe tener nombre y pertenecer a un **proyecto existente**.
 - Los nombres admiten hasta 200 caracteres y las descripciones hasta 1000.
-- Un proyecto con tareas en estado `pendiente` **no se puede eliminar**.
+- Un proyecto solo se puede eliminar si está **vacío o todas sus tareas están `completada`**.
 - **Avance** = tareas completadas ÷ total × 100, con dos decimales. Sin tareas es `0`.
 - Una tarea está **vencida** si su fecha límite es anterior a la fecha de referencia y no está `completada`.
 
 > [!WARNING]
-> Al eliminar un proyecto sin tareas pendientes, sus tareas se borran en cascada, **incluidas las que están en `progreso`**.
+> Al eliminar un proyecto permitido, sus tareas completadas **se borran en cascada**.
 
 ---
 
@@ -246,6 +253,17 @@ dotnet ef database update \
   --startup-project src/Proyectoandtask.Infrastructure
 ```
 
+#### 👥 Proyectos creados antes de tener propietario
+
+La migración `ProjectOwnerIsolation` agrega `OwnerId` y lo deja en `NULL` en los proyectos que ya existían. **Esos proyectos no aparecen en la API para ningún usuario** hasta que se les asigne un propietario. No se borran.
+
+Para asignarlos, usa [`docs/project-owner-backfill.sql`](docs/project-owner-backfill.sql):
+
+1. Haz una copia de seguridad de la base de datos.
+2. Busca el `Id` del usuario y los de sus proyectos.
+3. Reemplaza los UUID de ejemplo y ejecuta el script. Termina en `ROLLBACK`, así que no guarda cambios.
+4. Revisa el resultado, cambia `ROLLBACK` por `COMMIT` y vuelve a ejecutarlo.
+
 ### 5. Ejecutar
 
 ```bash
@@ -254,17 +272,35 @@ dotnet run --project src/Proyectandtask.Api --launch-profile http
 
 🎉 Abre **http://localhost:5000/swagger**. La ruta `/` redirige allí.
 
+Comprueba la conexión con la base de datos:
+
+```bash
+curl http://localhost:5000/health
+```
+
+```json
+{ "status": "Healthy", "checks": { "postgresql": "Healthy" } }
+```
+
 Para usar HTTPS (`https://localhost:7178`), ejecuta con `--launch-profile https`. Si el certificado local no es de confianza, usa antes `dotnet dev-certs https --trust`.
 
 ---
 
 ## 📡 Referencia de la API
 
-`/api/auth/*` es público. Los endpoints de proyectos y tareas exigen este encabezado:
+`/api/auth/*` y `/health` son públicos. Los endpoints de proyectos y tareas exigen este encabezado:
 
 ```http
 Authorization: Bearer <accessToken>
 ```
+
+También puedes probar las peticiones con [`Proyectandtask.Api.http`](src/Proyectandtask.Api/Proyectandtask.Api.http) desde un editor compatible.
+
+### 💓 Estado del servicio
+
+| Método | Ruta | Descripción |
+|:-:|---|---|
+| 🔵 `GET` | `/health` | `200` si PostgreSQL responde; `503` si no. No comprueba si las migraciones están aplicadas |
 
 ### 🔐 Autenticación
 
@@ -279,7 +315,7 @@ Authorization: Bearer <accessToken>
 
 | Método | Ruta | Descripción |
 |:-:|---|---|
-| 🔵 `GET` | `/api/proyectos` | Lista todos los proyectos |
+| 🔵 `GET` | `/api/proyectos` | Lista tus proyectos |
 | 🔵 `GET` | `/api/proyectos/{id}` | Consulta un proyecto |
 | 🔵 `GET` | `/api/proyectos/{id}/avance` | Porcentaje de avance |
 | 🟢 `POST` | `/api/proyectos` | Crea un proyecto |
@@ -396,9 +432,12 @@ El avance se devuelve como un número, por ejemplo `100` si es la única tarea.
 | `201` | Recurso creado |
 | `204` | Recurso eliminado |
 | `400` | Datos inválidos, regla de negocio incumplida o credenciales incorrectas |
-| `401` | Token ausente, inválido o vencido |
-| `404` | El proyecto o la tarea no existe (los listados de tareas devuelven `[]`) |
+| `401` | Token ausente, inválido, vencido o sin un identificador de usuario válido |
+| `404` | El proyecto o la tarea no existe o pertenece a otro usuario, también en los listados de tareas |
+| `503` | `/health` no puede conectarse a PostgreSQL |
 | `500` | Error inesperado |
+
+Al crear una tarea, o cambiarla de proyecto, indicar un proyecto ajeno o inexistente devuelve `400`.
 
 Ejemplo de error de negocio (`application/problem+json`):
 
@@ -422,9 +461,9 @@ dotnet test
 |---|---|:-:|:-:|
 | `Proyectoandtask.Domain.Tests` | Entidades, objetos de valor y excepciones | 6 | No |
 | `Proyectoandtask.Application.Tests` | Reglas de los servicios | 9 | No |
-| `Proyectoandtask.Infrastructure.IntegrationTests` | Repositorios sobre PostgreSQL | 5 | **Sí** |
-| `Proyectandtask.Api.Tests` | Endpoints HTTP de punta a punta | 4 | **Sí** |
-| **Total** | | **24** | |
+| `Proyectoandtask.Infrastructure.IntegrationTests` | Repositorios sobre PostgreSQL | 6 | **Sí** |
+| `Proyectandtask.Api.Tests` | Endpoints HTTP y aislamiento entre usuarios | 9 | **Sí** |
+| **Total** | | **30** | |
 
 Testcontainers crea los contenedores `postgres:16-alpine` automáticamente. Para recopilar cobertura:
 
@@ -452,6 +491,9 @@ flowchart LR
 - La Web App necesita en su configuración `ConnectionStrings__DefaultConnection` y las variables `Jwt__*`.
 - La base de datos debe permitir la extensión `citext` y aceptar la conexión desde GitHub Actions y desde Azure.
 
+> [!IMPORTANT]
+> El pipeline aplica las migraciones antes de desplegar. Si la base de datos ya tiene proyectos, [asígnales un propietario](#-proyectos-creados-antes-de-tener-propietario) después de migrar.
+
 El estado actual del pipeline se ve en la insignia del inicio.
 
 ---
@@ -464,6 +506,8 @@ El estado actual del pipeline se ve en la insignia del inicio.
 | `Configura la sección Jwt de la API` o error al validar JWT | Revisa las claves `Jwt:*` y la longitud de `SecretKey` |
 | `Define ConnectionStrings__DefaultConnection...` | Exporta la variable antes de usar `dotnet ef` (paso 4) |
 | `relation "..." does not exist` | Faltan las migraciones |
+| No aparecen proyectos antiguos | Pueden tener `OwnerId` en `NULL`; revisa el [script de propietarios](docs/project-owner-backfill.sql) |
+| Un proyecto existente responde `404` | Comprueba que el token sea del propietario |
 | El puerto `5432` o `5000` está ocupado | Detén el proceso que lo usa o cambia el puerto y la configuración |
 | Fallan las pruebas de integración | Comprueba que Docker esté en ejecución |
 | `AADSTS700016` en el login de Azure | Verifica que el client ID y el tenant ID de los secretos correspondan a la misma identidad y directorio |
@@ -474,13 +518,12 @@ El estado actual del pipeline se ve en la insignia del inicio.
 
 Lo que conviene saber antes de usar o ampliar el proyecto:
 
-- [ ] **Permisos por usuario:** los proyectos no tienen propietario. Cualquier usuario autenticado puede ver, editar y eliminar todos los proyectos y tareas, y el registro es público.
-- [ ] **Autorización por roles:** el token puede incluir roles, pero ningún endpoint los exige.
+- [ ] **Autorización por roles:** se asigna el rol `Usuario` al registrarse, pero ningún endpoint exige un rol. Las cuentas anteriores no lo reciben con las migraciones. El registro sigue siendo público.
 - [ ] **Sesiones:** no hay *refresh tokens*.
 - [ ] **Listados:** no tienen paginación.
 - [ ] **Swagger:** está habilitado en todos los entornos.
 - [ ] **CORS:** no está configurado; un frontend en otro origen lo necesitará.
-- [ ] **Limpieza:** hay archivos `bin/` y `obj/` versionados, y el archivo `.http` apunta a un endpoint de plantilla (`/weatherforecast`).
+- [ ] **Limpieza:** hay archivos de compilación versionados en `bin/`, `obj/` y `publish/`. `.gitignore` todavía no excluye `publish/`.
 
 ---
 

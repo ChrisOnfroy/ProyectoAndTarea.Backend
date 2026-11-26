@@ -85,7 +85,7 @@ public class TareaRepository : ITareaRepository
         return conteos is null ? (0, 0) : (conteos.Total, conteos.Completadas);
     }
 
-    public Task<bool> TieneTareasPendientesPorProyectoAsync(
+    public Task<bool> TieneTareasSinCompletarPorProyectoAsync(
         Guid proyectoId,
         Guid ownerId,
         CancellationToken cancellationToken = default)
@@ -93,7 +93,7 @@ public class TareaRepository : ITareaRepository
         return _context.Tareas
             .AsNoTracking()
             .AnyAsync(
-                tarea => tarea.ProyectoId == proyectoId && tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId && tarea.EstadoTarea == EstadoTarea.pendiente,
+                tarea => tarea.ProyectoId == proyectoId && tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId && tarea.EstadoTarea != EstadoTarea.completada,
                 cancellationToken);
     }
 
