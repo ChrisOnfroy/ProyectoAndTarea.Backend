@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-label="Proyectandtask: API REST para gestionar proyectos y tareas">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/><stop offset="0.55" stop-color="#312e81"/><stop offset="1" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="340" rx="24" fill="url(#bg)"/>
+  <circle cx="1130" cy="20" r="190" fill="#ffffff" opacity="0.04"/>
+  <circle cx="60" cy="350" r="150" fill="#22d3ee" opacity="0.07"/>
+  <g font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+    <text x="64" y="98" font-size="17" font-weight="600" letter-spacing="3" fill="#67e8f9">BACKEND · API REST</text>
+    <text x="60" y="168" font-size="58" font-weight="800" fill="#ffffff">Proyectandtask</text>
+    <rect x="64" y="190" width="120" height="6" rx="3" fill="url(#accent)"/>
+    <text x="64" y="237" font-size="22" fill="#e0e7ff">Organiza proyectos, controla tareas</text>
+    <text x="64" y="268" font-size="22" fill="#e0e7ff">y mide el avance de tu equipo.</text>
+    <!-- Tablero ilustrativo -->
+    <g transform="translate(640,58)">
+      <g fill="#ffffff" opacity="0.09">
+        <rect width="156" height="224" rx="14"/><rect x="172" width="156" height="224" rx="14"/><rect x="344" width="156" height="224" rx="14"/>
+      </g>
+      <g font-size="14" font-weight="700" fill="#ffffff">
+        <circle cx="20" cy="27" r="5" fill="#fbbf24"/><text x="33" y="32">Pendiente</text>
+        <circle cx="192" cy="27" r="5" fill="#22d3ee"/><text x="205" y="32">Progreso</text>
+        <circle cx="364" cy="27" r="5" fill="#34d399"/><text x="377" y="32">Completada</text>
+      </g>
+      <g fill="#ffffff">
+        <rect x="12" y="50" width="132" height="48" rx="8"/><rect x="12" y="108" width="132" height="48" rx="8"/><rect x="12" y="166" width="132" height="48" rx="8"/>
+        <rect x="184" y="50" width="132" height="48" rx="8"/><rect x="184" y="108" width="132" height="48" rx="8"/>
+        <rect x="356" y="50" width="132" height="48" rx="8"/>
+      </g>
+      <g fill="#94a3b8">
+        <rect x="24" y="63" width="86" height="7" rx="3.5"/><rect x="24" y="121" width="68" height="7" rx="3.5"/><rect x="24" y="179" width="94" height="7" rx="3.5"/>
+        <rect x="196" y="63" width="76" height="7" rx="3.5"/><rect x="196" y="121" width="92" height="7" rx="3.5"/><rect x="368" y="63" width="82" height="7" rx="3.5"/>
+      </g>
+      <g>
+        <rect x="24" y="80" width="34" height="8" rx="4" fill="#f43f5e"/><rect x="24" y="138" width="34" height="8" rx="4" fill="#f59e0b"/><rect x="24" y="196" width="34" height="8" rx="4" fill="#10b981"/>
+        <rect x="196" y="80" width="34" height="8" rx="4" fill="#f43f5e"/><rect x="196" y="138" width="34" height="8" rx="4" fill="#f59e0b"/><rect x="368" y="80" width="34" height="8" rx="4" fill="#10b981"/>
+      </g>
+    </g>
+  </g>
+</svg>
