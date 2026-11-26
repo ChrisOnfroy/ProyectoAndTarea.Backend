@@ -25,7 +25,10 @@ public class TareaService : ITareaService
 
     public async Task<TareaResponseDto> CrearAsync(TareaRequestDto request, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var nombre = ValidarYNormalizarNombre(request.Name);
+        ValidarDescripcion(request.Description);
+        ValidarFechaLimite(request.FechaLimite);
         ValidarEstado(request.EstadoTarea);
         ValidarPrioridad(request.PrioridadTarea);
         await ValidarProyectoAsync(request.ProyectoId, cancellationToken);
@@ -50,6 +53,26 @@ public class TareaService : ITareaService
     {
         var tarea = await _tareaRepository.ObtenerPorIdAsync(id, cancellationToken);
         return tarea is null ? null : MapToDto(tarea);
+    }
+
+    public async Task<TareaResponseDto?> CambiarEstadoAsync(
+        Guid id,
+        EstadoTarea estado,
+        CancellationToken cancellationToken = default)
+    {
+        ValidarEstado(estado);
+
+        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, cancellationToken);
+        if (tarea is null)
+            return null;
+
+        tarea.EstadoTarea = estado;
+        tarea.SetUpdatedAt();
+
+        await _tareaRepository.ActualizarAsync(tarea, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return MapToDto(tarea);
     }
 
     public async Task<IReadOnlyList<TareaResponseDto>> ObtenerPorProyectoAsync(
@@ -102,11 +125,14 @@ public class TareaService : ITareaService
         TareaRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var tarea = await _tareaRepository.ObtenerPorIdAsync(id, cancellationToken);
         if (tarea is null)
             return null;
 
         var nombre = ValidarYNormalizarNombre(request.Name);
+        ValidarDescripcion(request.Description);
+        ValidarFechaLimite(request.FechaLimite);
         ValidarEstado(request.EstadoTarea);
         ValidarPrioridad(request.PrioridadTarea);
         await ValidarProyectoAsync(request.ProyectoId, cancellationToken);
@@ -151,7 +177,22 @@ public class TareaService : ITareaService
         if (string.IsNullOrWhiteSpace(nombreNormalizado))
             throw new DomainException("El nombre de la tarea es obligatorio.");
 
+        if (nombreNormalizado.Length > 200)
+            throw new DomainException("El nombre de la tarea no puede superar los 200 caracteres.");
+
         return nombreNormalizado;
+    }
+
+    private static void ValidarDescripcion(string? descripcion)
+    {
+        if (descripcion?.Length > 1000)
+            throw new DomainException("La descripción de la tarea no puede superar los 1000 caracteres.");
+    }
+
+    private static void ValidarFechaLimite(DateTime? fechaLimite)
+    {
+        if (fechaLimite == DateTime.MinValue)
+            throw new DomainException("La fecha límite debe ser válida.");
     }
 
     private static void ValidarEstado(EstadoTarea estado)
