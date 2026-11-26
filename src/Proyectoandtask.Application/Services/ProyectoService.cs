@@ -129,9 +129,9 @@ public class ProyectoService : IProyectoService
         var proyecto =  await _proyectoRepository.GetProyectoAsync(id, ownerId, cancellationToken);
         if (proyecto is null) return false;
 
-        if (await _tareaRepository.TieneTareasPendientesPorProyectoAsync(id, ownerId, cancellationToken))
+        if (await _tareaRepository.TieneTareasSinCompletarPorProyectoAsync(id, ownerId, cancellationToken))
         {
-            throw new DomainException("No se puede eliminar un proyecto que tiene tareas pendientes.");
+            throw new DomainException("No se puede eliminar un proyecto que tiene tareas sin completar.");
         }
         
         await _proyectoRepository.DeleteAsync(proyecto, cancellationToken);

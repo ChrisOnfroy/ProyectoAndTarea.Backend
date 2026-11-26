@@ -14,16 +14,20 @@ namespace Proyectoandtask.Infrastructure.Services;
 
 public sealed class IdentityAuthService : IAuthService
 {
+    private const string DefaultRole = "Usuario";
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly JwtOptions _jwtOptions;
 
     public IdentityAuthService(
         UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole<Guid>> roleManager,
         SignInManager<ApplicationUser> signInManager,
         JwtOptions jwtOptions)
     {
         _userManager = userManager;
+        _roleManager = roleManager;
         _signInManager = signInManager;
         _jwtOptions = jwtOptions;
     }
@@ -59,6 +63,8 @@ public sealed class IdentityAuthService : IAuthService
             LockoutEnabled = true
         };
 
+        await EnsureDefaultRoleAsync();
+
         IdentityResult result;
         try
         {
@@ -77,7 +83,26 @@ public sealed class IdentityAuthService : IAuthService
             throw new DomainException(errors);
         }
 
+        var roleResult = await _userManager.AddToRoleAsync(user, DefaultRole);
+        if (!roleResult.Succeeded)
+        {
+            await _userManager.DeleteAsync(user);
+            throw new DomainException(string.Join(" ", roleResult.Errors.Select(error => error.Description)));
+        }
+
         return await CreateAuthResponseAsync(user);
+    }
+
+    private async Task EnsureDefaultRoleAsync()
+    {
+        if (await _roleManager.RoleExistsAsync(DefaultRole))
+            return;
+
+        var result = await _roleManager.CreateAsync(new IdentityRole<Guid>(DefaultRole));
+        if (result.Succeeded || await _roleManager.RoleExistsAsync(DefaultRole))
+            return;
+
+        throw new DomainException(string.Join(" ", result.Errors.Select(error => error.Description)));
     }
 
     private static bool IsEmailUniqueConstraintViolation(Exception exception)
