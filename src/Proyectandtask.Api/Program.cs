@@ -10,6 +10,7 @@ using Proyectandtask.Api;
 using Proyectoandtask.Application;
 using Proyectoandtask.Infrastructure;
 using Proyectoandtask.Infrastructure.Identity;
+using Proyectoandtask.Infrastructure.Services;
 using Proyectoandtask.Application.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,7 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddInfrastructureServices(connectionString, jwtOptions);
 builder.Services.AddHealthChecks()
     .AddCheck<PostgreSqlHealthCheck>("postgresql");
+builder.Services.AddScoped<DemoDataSeeder>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -50,6 +52,9 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+    await scope.ServiceProvider.GetRequiredService<DemoDataSeeder>().SeedAsync();
 
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 {

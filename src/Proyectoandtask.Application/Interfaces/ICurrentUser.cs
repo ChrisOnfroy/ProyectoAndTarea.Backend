@@ -4,4 +4,5 @@ namespace Proyectoandtask.Application.Interfaces;
 public interface ICurrentUser
 {
     Guid UserId { get; }
+    bool IsAdmin { get; }
 }

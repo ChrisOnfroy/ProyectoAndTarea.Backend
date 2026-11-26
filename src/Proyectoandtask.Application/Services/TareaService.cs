@@ -56,7 +56,7 @@ public class TareaService : ITareaService
     public async Task<TareaResponseDto?> ObtenerPorIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var ownerId = _currentUser.UserId;
-        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, ownerId, cancellationToken);
+        var tarea = await _tareaRepository.ObtenerPorIdAsync(id, ownerId, cancellationToken, _currentUser.IsAdmin);
         return tarea is null ? null : MapToDto(tarea);
     }
 
@@ -87,10 +87,10 @@ public class TareaService : ITareaService
         CancellationToken cancellationToken = default)
     {
         var ownerId = _currentUser.UserId;
-        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken) is null)
+        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken, _currentUser.IsAdmin) is null)
             return null;
         var nombre = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
-        var tareas = await _tareaRepository.ObtenerPorProyectoAsync(proyectoId, ownerId, nombre, cancellationToken);
+        var tareas = await _tareaRepository.ObtenerPorProyectoAsync(proyectoId, ownerId, nombre, cancellationToken, _currentUser.IsAdmin);
         return tareas.Select(MapToDto).ToList();
     }
 
@@ -101,9 +101,9 @@ public class TareaService : ITareaService
     {
         ValidarEstado(estado);
         var ownerId = _currentUser.UserId;
-        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken) is null)
+        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken, _currentUser.IsAdmin) is null)
             return null;
-        var tareas = await _tareaRepository.ObtenerPorEstadoAsync(proyectoId, ownerId, estado, cancellationToken);
+        var tareas = await _tareaRepository.ObtenerPorEstadoAsync(proyectoId, ownerId, estado, cancellationToken, _currentUser.IsAdmin);
         return tareas.Select(MapToDto).ToList();
     }
 
@@ -114,9 +114,9 @@ public class TareaService : ITareaService
     {
         ValidarPrioridad(prioridad);
         var ownerId = _currentUser.UserId;
-        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken) is null)
+        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken, _currentUser.IsAdmin) is null)
             return null;
-        var tareas = await _tareaRepository.ObtenerPorPrioridadAsync(proyectoId, ownerId, prioridad, cancellationToken);
+        var tareas = await _tareaRepository.ObtenerPorPrioridadAsync(proyectoId, ownerId, prioridad, cancellationToken, _currentUser.IsAdmin);
         return tareas.Select(MapToDto).ToList();
     }
 
@@ -126,7 +126,7 @@ public class TareaService : ITareaService
         CancellationToken cancellationToken = default)
     {
         var ownerId = _currentUser.UserId;
-        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken) is null)
+        if (await _proyectoRepository.GetProyectoAsync(proyectoId, ownerId, cancellationToken, _currentUser.IsAdmin) is null)
             return null;
 
         if (fechaReferencia == DateTime.MinValue)
@@ -136,7 +136,8 @@ public class TareaService : ITareaService
             proyectoId,
             ownerId,
             fechaReferencia,
-            cancellationToken);
+            cancellationToken,
+            _currentUser.IsAdmin);
         return tareas.Select(MapToDto).ToList();
     }
 

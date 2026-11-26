@@ -5,6 +5,8 @@ namespace Proyectandtask.Api;
 
 public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICurrentUser
 {
+    public bool IsAdmin => httpContextAccessor.HttpContext?.User.IsInRole("admin") == true;
+
     public Guid UserId
     {
         get

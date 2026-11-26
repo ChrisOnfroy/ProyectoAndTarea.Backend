@@ -4,7 +4,7 @@ namespace proyectoandtask.Application.Interfaces.Repositories;
 
 public interface IProyectoRepository
 {
-    Task<Proyecto?> GetProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default);
+    Task<Proyecto?> GetProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default, bool includeAllOwners = false);
     
     Task<bool> ExistsByNameAsync(
         string name,

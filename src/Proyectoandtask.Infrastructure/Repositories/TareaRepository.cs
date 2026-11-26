@@ -16,18 +16,18 @@ public class TareaRepository : ITareaRepository
         _context = context;
     }
     
-    public Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, Guid ownerId, CancellationToken cancellationToken = default)
+    public Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, Guid ownerId, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return _context.Tareas
-            .Where(t => t.Proyecto != null && t.Proyecto.OwnerId == ownerId)
+            .Where(t => includeAllOwners || (t.Proyecto != null && t.Proyecto.OwnerId == ownerId))
             .FirstOrDefaultAsync(t => t.Id == tareaId, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Tarea>> ObtenerPorProyectoAsync(Guid proyectoId, Guid ownerId, string? name = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Tarea>> ObtenerPorProyectoAsync(Guid proyectoId, Guid ownerId, string? name = null, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         var query = _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId && tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId);
+            .Where(tarea => tarea.ProyectoId == proyectoId && (includeAllOwners || (tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)));
 
         if (!string.IsNullOrWhiteSpace(name))
         {
@@ -38,28 +38,28 @@ public class TareaRepository : ITareaRepository
         return await query.ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(Guid proyectoId, Guid ownerId, EstadoTarea estado, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(Guid proyectoId, Guid ownerId, EstadoTarea estado, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return await _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId && tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId && tarea.EstadoTarea == estado)
+            .Where(tarea => tarea.ProyectoId == proyectoId && (includeAllOwners || (tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)) && tarea.EstadoTarea == estado)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(Guid proyectoId, Guid ownerId, PrioridadTarea prioridad, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(Guid proyectoId, Guid ownerId, PrioridadTarea prioridad, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return await _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId && tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId && tarea.PrioridadTarea == prioridad)
+            .Where(tarea => tarea.ProyectoId == proyectoId && (includeAllOwners || (tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)) && tarea.PrioridadTarea == prioridad)
             .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(Guid proyectoId, Guid ownerId, DateTime fechaReferencia,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return await _context.Tareas
             .AsNoTracking()
-            .Where(tarea => tarea.ProyectoId == proyectoId && tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId &&
+            .Where(tarea => tarea.ProyectoId == proyectoId && (includeAllOwners || (tarea.Proyecto != null && tarea.Proyecto.OwnerId == ownerId)) &&
                             tarea.FechaLimite.HasValue &&
                             tarea.FechaLimite.Value < fechaReferencia &&
                             tarea.EstadoTarea != EstadoTarea.completada)

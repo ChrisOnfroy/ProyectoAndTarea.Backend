@@ -14,7 +14,6 @@ namespace Proyectoandtask.Infrastructure.Services;
 
 public sealed class IdentityAuthService : IAuthService
 {
-    private const string DefaultRole = "Usuario";
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
@@ -63,7 +62,7 @@ public sealed class IdentityAuthService : IAuthService
             LockoutEnabled = true
         };
 
-        await EnsureDefaultRoleAsync();
+        await EnsureUserRoleAsync();
 
         IdentityResult result;
         try
@@ -83,7 +82,7 @@ public sealed class IdentityAuthService : IAuthService
             throw new DomainException(errors);
         }
 
-        var roleResult = await _userManager.AddToRoleAsync(user, DefaultRole);
+        var roleResult = await _userManager.AddToRoleAsync(user, ApplicationRoles.User);
         if (!roleResult.Succeeded)
         {
             await _userManager.DeleteAsync(user);
@@ -93,16 +92,14 @@ public sealed class IdentityAuthService : IAuthService
         return await CreateAuthResponseAsync(user);
     }
 
-    private async Task EnsureDefaultRoleAsync()
+    private async Task EnsureUserRoleAsync()
     {
-        if (await _roleManager.RoleExistsAsync(DefaultRole))
+        if (await _roleManager.RoleExistsAsync(ApplicationRoles.User))
             return;
 
-        var result = await _roleManager.CreateAsync(new IdentityRole<Guid>(DefaultRole));
-        if (result.Succeeded || await _roleManager.RoleExistsAsync(DefaultRole))
-            return;
-
-        throw new DomainException(string.Join(" ", result.Errors.Select(error => error.Description)));
+        var result = await _roleManager.CreateAsync(new IdentityRole<Guid>(ApplicationRoles.User));
+        if (!result.Succeeded && !await _roleManager.RoleExistsAsync(ApplicationRoles.User))
+            throw new DomainException(string.Join(" ", result.Errors.Select(error => error.Description)));
     }
 
     private static bool IsEmailUniqueConstraintViolation(Exception exception)
