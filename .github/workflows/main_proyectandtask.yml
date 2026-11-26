@@ -26,14 +26,36 @@ jobs:
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
+      - name: Run tests
+        run: dotnet test --configuration Release --no-build
+
       - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish src/Proyectandtask.Api/Proyectandtask.Api.csproj -c Release -o ${{ env.DOTNET_ROOT }}/myapp
+
+      - name: Create migration bundle
+        env:
+          # Cadena de relleno: la factory la exige, pero aquí no se conecta
+          ConnectionStrings__DefaultConnection: "Host=localhost;Database=build;Username=build"
+        run: |
+          dotnet tool install --global dotnet-ef --version "10.0.*"
+          dotnet ef migrations bundle \
+            --project src/Proyectoandtask.Infrastructure \
+            --startup-project src/Proyectoandtask.Infrastructure \
+            --configuration Release \
+            --self-contained -r linux-x64 \
+            -o efbundle
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ${{ env.DOTNET_ROOT }}/myapp
+
+      - name: Upload migration bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: efbundle
+          path: efbundle
 
   deploy:
     runs-on: ubuntu-latest
@@ -47,7 +69,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-      
+          path: app
+
+      - name: Download migration bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: efbundle
+          path: ef
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -55,11 +84,17 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_47E099947B104CA7937B3C6B707A138F }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B5EC0BDAFDE74AD39C85C26B62C84402 }}
 
+      - name: Apply database migrations
+        env:
+          ConnectionStrings__DefaultConnection: ${{ secrets.DB_CONNECTION_STRING }}
+        run: |
+          chmod +x ef/efbundle
+          ./ef/efbundle
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'proyectandtask'
           slot-name: 'Production'
-          package: .
-          
+          package: app
