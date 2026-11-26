@@ -175,7 +175,7 @@ public sealed class ServiceRequirementTests
         public bool UpdateCalled { get; private set; }
         public bool DeleteCalled { get; private set; }
 
-        public Task<Proyecto?> GetProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default)
+        public Task<Proyecto?> GetProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default, bool includeAllOwners = false)
         {
             return Task.FromResult(Proyecto?.Id == proyectoId ? Proyecto : null);
         }
@@ -217,35 +217,39 @@ public sealed class ServiceRequirementTests
         public Tarea? AddedTarea { get; private set; }
         public bool UpdateCalled { get; private set; }
 
-        public Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, Guid ownerId, CancellationToken cancellationToken = default) =>
+        public Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, Guid ownerId, CancellationToken cancellationToken = default, bool includeAllOwners = false) =>
             Task.FromResult(Tarea?.Id == tareaId ? Tarea : null);
 
         public Task<IReadOnlyList<Tarea>> ObtenerPorProyectoAsync(
             Guid proyectoId,
             Guid ownerId,
             string? name = null,
-            CancellationToken cancellationToken = default) =>
+            CancellationToken cancellationToken = default,
+            bool includeAllOwners = false) =>
             Task.FromResult<IReadOnlyList<Tarea>>(Array.Empty<Tarea>());
 
         public Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(
             Guid proyectoId,
             Guid ownerId,
             EstadoTarea estado,
-            CancellationToken cancellationToken = default) =>
+            CancellationToken cancellationToken = default,
+            bool includeAllOwners = false) =>
             Task.FromResult<IReadOnlyList<Tarea>>(Array.Empty<Tarea>());
 
         public Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(
             Guid proyectoId,
             Guid ownerId,
             PrioridadTarea prioridad,
-            CancellationToken cancellationToken = default) =>
+            CancellationToken cancellationToken = default,
+            bool includeAllOwners = false) =>
             Task.FromResult<IReadOnlyList<Tarea>>(Array.Empty<Tarea>());
 
         public Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(
             Guid proyectoId,
             Guid ownerId,
             DateTime fechaReferencia,
-            CancellationToken cancellationToken = default) =>
+            CancellationToken cancellationToken = default,
+            bool includeAllOwners = false) =>
             Task.FromResult<IReadOnlyList<Tarea>>(Array.Empty<Tarea>());
 
         public Task<(int Total, int Completadas)> ObtenerConteosPorProyectoAsync(
@@ -291,5 +295,6 @@ public sealed class ServiceRequirementTests
     {
         public static Guid TestUserId { get; } = Guid.Parse("11111111-1111-1111-1111-111111111111");
         public Guid UserId => TestUserId;
+        public bool IsAdmin => false;
     }
 }

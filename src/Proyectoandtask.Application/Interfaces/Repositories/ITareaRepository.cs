@@ -5,11 +5,11 @@ namespace proyectoandtask.Application.Interfaces.Repositories;
 
 public interface ITareaRepository
 {
-    Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, Guid ownerId, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Tarea>> ObtenerPorProyectoAsync(Guid proyectoId, Guid ownerId, string? name = null, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(Guid proyectoId, Guid ownerId, EstadoTarea estado, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(Guid proyectoId, Guid ownerId, PrioridadTarea prioridad, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(Guid proyectoId, Guid ownerId, DateTime fechaReferencia, CancellationToken cancellationToken = default);
+    Task<Tarea?> ObtenerPorIdAsync(Guid tareaId, Guid ownerId, CancellationToken cancellationToken = default, bool includeAllOwners = false);
+    Task<IReadOnlyList<Tarea>> ObtenerPorProyectoAsync(Guid proyectoId, Guid ownerId, string? name = null, CancellationToken cancellationToken = default, bool includeAllOwners = false);
+    Task<IReadOnlyList<Tarea>> ObtenerPorEstadoAsync(Guid proyectoId, Guid ownerId, EstadoTarea estado, CancellationToken cancellationToken = default, bool includeAllOwners = false);
+    Task<IReadOnlyList<Tarea>> ObtenerPorPrioridadAsync(Guid proyectoId, Guid ownerId, PrioridadTarea prioridad, CancellationToken cancellationToken = default, bool includeAllOwners = false);
+    Task<IReadOnlyList<Tarea>> ObtenerVencidasNoCompletadasAsync(Guid proyectoId, Guid ownerId, DateTime fechaReferencia, CancellationToken cancellationToken = default, bool includeAllOwners = false);
     Task<(int Total, int Completadas)> ObtenerConteosPorProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default);
     Task<bool> TieneTareasPendientesPorProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default);
     Task AgregarAsync(Tarea tarea, CancellationToken cancellationToken = default);

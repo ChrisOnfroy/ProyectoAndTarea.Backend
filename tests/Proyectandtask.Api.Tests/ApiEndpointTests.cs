@@ -7,6 +7,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using Proyectoandtask.Infrastructure.Identity;
 using System.IdentityModel.Tokens.Jwt;
 using proyectoandtask.Application.Dtos;
 using proyectandtask.Domain.Enums;
@@ -205,6 +208,56 @@ public sealed class ApiEndpointTests
         Assert.Equal(HttpStatusCode.Created, (await clientA.PostAsJsonAsync("/api/proyectos", ProjectRequest(name))).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await clientA.PostAsJsonAsync("/api/proyectos", ProjectRequest(name.ToUpperInvariant()))).StatusCode);
         Assert.Equal(HttpStatusCode.Created, (await clientB.PostAsJsonAsync("/api/proyectos", ProjectRequest(name.ToLowerInvariant()))).StatusCode);
+    }
+
+    [Fact]
+    public async Task Admin_PuedeLeerTareasDeOtrosUsuariosPeroNoModificarlas()
+    {
+        using var ownerClient = await CreateAuthenticatedClientAsync();
+        var project = await CreateProjectAsync(ownerClient, $"Proyecto usuario {Guid.NewGuid():N}");
+        var task = await CreateTaskAsync(ownerClient, project.Id, "Tarea privada");
+
+        var adminEmail = $"admin-{Guid.NewGuid():N}@example.com";
+        var adminName = $"admin-{Guid.NewGuid():N}";
+        using var registrationClient = _fixture.Factory.CreateClient();
+        var registration = await registrationClient.PostAsJsonAsync("/api/auth/register", new
+        {
+            userName = adminName,
+            email = adminEmail,
+            password = "Integration_Test!Pass123"
+        });
+        Assert.Equal(HttpStatusCode.OK, registration.StatusCode);
+
+        await using (var scope = _fixture.Factory.Services.CreateAsyncScope())
+        {
+            var services = scope.ServiceProvider;
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+            if (!await roleManager.RoleExistsAsync(ApplicationRoles.Admin))
+                Assert.True((await roleManager.CreateAsync(new IdentityRole<Guid>(ApplicationRoles.Admin))).Succeeded);
+
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var adminUser = await userManager.FindByEmailAsync(adminEmail);
+            Assert.NotNull(adminUser);
+            Assert.True((await userManager.AddToRoleAsync(adminUser, ApplicationRoles.Admin)).Succeeded);
+        }
+
+        var loginClient = _fixture.Factory.CreateClient();
+        var login = await loginClient.PostAsJsonAsync("/api/auth/login", new
+        {
+            email = adminEmail,
+            password = "Integration_Test!Pass123"
+        });
+        var loginBody = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
+        loginClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer", loginBody.RootElement.GetProperty("accessToken").GetString());
+
+        Assert.Equal(HttpStatusCode.OK, (await loginClient.GetAsync($"/api/tareas/{task.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await loginClient.GetAsync($"/api/tareas/proyecto/{project.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await loginClient.PatchAsJsonAsync($"/api/tareas/{task.Id}/estado", new { estado = "completada" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await loginClient.DeleteAsync($"/api/tareas/{task.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await ownerClient.GetAsync($"/api/tareas/{task.Id}")).StatusCode);
+        loginBody.Dispose();
+        loginClient.Dispose();
     }
 
     [Fact]

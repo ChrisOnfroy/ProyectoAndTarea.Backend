@@ -15,10 +15,10 @@ public class ProyectoRepository : IProyectoRepository
     }
 
 
-    public Task<Proyecto?> GetProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default)
+    public Task<Proyecto?> GetProyectoAsync(Guid proyectoId, Guid ownerId, CancellationToken cancellationToken = default, bool includeAllOwners = false)
     {
         return _context.Proyectos
-            .FirstOrDefaultAsync(proyecto => proyecto.Id == proyectoId && proyecto.OwnerId == ownerId, cancellationToken);
+            .FirstOrDefaultAsync(proyecto => proyecto.Id == proyectoId && (includeAllOwners || proyecto.OwnerId == ownerId), cancellationToken);
     }
 
     public async Task<bool> ExistsByNameAsync(
