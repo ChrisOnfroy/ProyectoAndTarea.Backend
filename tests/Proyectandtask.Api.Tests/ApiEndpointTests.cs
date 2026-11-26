@@ -294,14 +294,12 @@ public sealed class ApiEndpointTests
         }
 
         var loginClient = _fixture.Factory.CreateClient();
-        using var loginClient = _fixture.Factory.CreateClient();
         var login = await loginClient.PostAsJsonAsync("/api/auth/login", new
         {
             email = adminEmail,
             password = "Integration_Test!Pass123"
         });
         var loginBody = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
-        using var loginBody = JsonDocument.Parse(await login.Content.ReadAsStringAsync());
         loginClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer", loginBody.RootElement.GetProperty("accessToken").GetString());
 
