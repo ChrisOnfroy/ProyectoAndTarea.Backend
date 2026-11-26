@@ -14,3 +14,19 @@
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.pdb
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/ref/Proyectoandtask.Application.dll
 /home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/obj/Debug/net10.0/Proyectoandtask.Application.sourcelink.json
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\bin\Debug\net10.0\Proyectoandtask.Application.deps.json
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\bin\Debug\net10.0\Proyectoandtask.Application.dll
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\bin\Debug\net10.0\Proyectoandtask.Application.pdb
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\bin\Debug\net10.0\Proyectandtask.Domain.dll
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\bin\Debug\net10.0\Proyectandtask.Domain.pdb
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyectoandtask.Application.csproj.AssemblyReference.cache
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyectoandtask.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyectoandtask.Application.AssemblyInfoInputs.cache
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyectoandtask.Application.AssemblyInfo.cs
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyectoandtask.Application.csproj.CoreCompileInputs.cache
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyectoandtask.Application.sourcelink.json
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyecto.0DEC91FC.Up2Date
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyectoandtask.Application.dll
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\refint\Proyectoandtask.Application.dll
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\Proyectoandtask.Application.pdb
+C:\Users\Usuario Invitado\RiderProjects\ProyectoAndTarea.Backend\src\Proyectoandtask.Application\obj\Debug\net10.0\ref\Proyectoandtask.Application.dll

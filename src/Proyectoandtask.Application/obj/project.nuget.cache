@@ -1,11 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "4Sy8z2FHg8g=",
+  "dgSpecHash": "hPYTVmMzx8w=",
   "success": true,
-  "projectFilePath": "/home/cohorte5/Documentos/nuevoProyecto/proyectandtask/src/Proyectoandtask.Application/Proyectoandtask.Application.csproj",
+  "projectFilePath": "C:\\Users\\Usuario Invitado\\RiderProjects\\ProyectoAndTarea.Backend\\src\\Proyectoandtask.Application\\Proyectoandtask.Application.csproj",
   "expectedPackageFiles": [
-    "/home/cohorte5/.nuget/packages/microsoft.extensions.dependencyinjection/11.0.0/microsoft.extensions.dependencyinjection.11.0.0.nupkg.sha512",
-    "/home/cohorte5/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/11.0.0/microsoft.extensions.dependencyinjection.abstractions.11.0.0.nupkg.sha512"
+    "C:\\Users\\Usuario Invitado\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\11.0.0\\microsoft.extensions.dependencyinjection.11.0.0.nupkg.sha512",
+    "C:\\Users\\Usuario Invitado\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\11.0.0\\microsoft.extensions.dependencyinjection.abstractions.11.0.0.nupkg.sha512"
   ],
   "logs": []
 }
