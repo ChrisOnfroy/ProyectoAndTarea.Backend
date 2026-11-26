@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using proyectandtask.Domain.Entities;
+using Proyectoandtask.Infrastructure.Identity;
 
 namespace Proyectoandtask.Infrastructure.Configurations;
 
@@ -17,9 +18,14 @@ public sealed class ProyectoConfiguration : IEntityTypeConfiguration<Proyecto>
             .HasMaxLength(200)
             .HasColumnType("citext");
 
-        builder.HasIndex(proyecto => proyecto.Name)
+        builder.HasIndex(proyecto => new { proyecto.OwnerId, proyecto.Name })
             .HasDatabaseName("IX_Proyectos_Name")
             .IsUnique();
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(proyecto => proyecto.OwnerId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(proyecto => proyecto.Description)
             .HasMaxLength(1000);

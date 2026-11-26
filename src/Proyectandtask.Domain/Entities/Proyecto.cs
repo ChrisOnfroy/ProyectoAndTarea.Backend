@@ -6,6 +6,8 @@ public class Proyecto : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+
+    public Guid? OwnerId { get; set; }
     
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
