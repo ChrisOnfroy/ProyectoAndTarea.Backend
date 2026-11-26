@@ -1,4 +1,11 @@
 <Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/Proyectandtask.Api.Tests/Proyectandtask.Api.Tests.csproj" />
+    <Project Path="tests/Proyectoandtask.Application.Tests/Proyectoandtask.Application.Tests.csproj" />
+    <Project Path="tests/Proyectoandtask.Domain.Tests/Proyectoandtask.Domain.Tests.csproj" />
+    <Project Path="tests/Proyectoandtask.Infrastructure.IntegrationTests/Proyectoandtask.Infrastructure.IntegrationTests.csproj" />
+  </Folder>
+  <Project Path="src/Proyectandtask.Api/Proyectandtask.Api.csproj" />
   <Project Path="src/Proyectandtask.Domain/Proyectandtask.Domain.csproj" />
   <Project Path="src/Proyectoandtask.Application/Proyectoandtask.Application.csproj" />
   <Project Path="src/Proyectoandtask.Infrastructure/Proyectoandtask.Infrastructure.csproj" />
