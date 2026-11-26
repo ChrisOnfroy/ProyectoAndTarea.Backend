@@ -14,7 +14,12 @@ public sealed class ProyectoConfiguration : IEntityTypeConfiguration<Proyecto>
 
         builder.Property(proyecto => proyecto.Name)
             .IsRequired()
-            .HasMaxLength(200);
+            .HasMaxLength(200)
+            .HasColumnType("citext");
+
+        builder.HasIndex(proyecto => proyecto.Name)
+            .HasDatabaseName("IX_Proyectos_Name")
+            .IsUnique();
 
         builder.Property(proyecto => proyecto.Description)
             .HasMaxLength(1000);
@@ -22,7 +27,11 @@ public sealed class ProyectoConfiguration : IEntityTypeConfiguration<Proyecto>
         builder.Property(proyecto => proyecto.FechaCreacion)
             .IsRequired();
 
-        builder.Property(proyecto => proyecto.FechaFinalizacion);
+        builder.Property(proyecto => proyecto.FechaInicio)
+            .IsRequired();
+
+        builder.Property(proyecto => proyecto.FechaFinalizacion)
+            .IsRequired();
 
         builder.Property(proyecto => proyecto.CreatedAt)
             .IsRequired();
