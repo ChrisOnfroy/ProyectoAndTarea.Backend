@@ -6,7 +6,7 @@ using Proyectoandtask.Application.Interfaces;
 namespace Proyectandtask.Api.Controller;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api/v1/auth")]
 [AllowAnonymous]
 public sealed class AuthController : ControllerBase
 {

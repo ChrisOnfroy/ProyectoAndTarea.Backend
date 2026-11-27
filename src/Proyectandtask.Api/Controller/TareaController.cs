@@ -8,7 +8,7 @@ using Proyectoandtask.Application.Interfaces;
 namespace Proyectandtask.Api.Controller;
 
 [ApiController]
-[Route("api/tareas")]
+[Route("api/v1/tareas")]
 [Authorize]
 public sealed class TareaController : ControllerBase
 {

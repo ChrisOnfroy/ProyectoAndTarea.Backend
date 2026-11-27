@@ -6,7 +6,7 @@ using Proyectoandtask.Application.Interfaces;
 namespace Proyectandtask.Api.Controller;
 
 [ApiController]
-[Route("api/proyectos")]
+[Route("api/v1/proyectos")]
 [Authorize]
 public sealed class ProyectoController : ControllerBase
 {
