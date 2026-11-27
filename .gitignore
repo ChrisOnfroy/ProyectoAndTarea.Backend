@@ -4,3 +4,6 @@
 
 # IDE settings
 .idea/
+
+# AI tool configuration
+.ai/
