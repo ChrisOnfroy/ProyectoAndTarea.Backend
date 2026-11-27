@@ -15,7 +15,7 @@ using proyectoandtask.Application.Dtos;
 using proyectandtask.Domain.Enums;
 using proyectandtask.Domain.Entities;
 
-namespace Proyectandtask.Api.Tests;
+namespace Proyectandtask.Api.IntegrationTests;
 
 [Collection(ApiPostgreSqlCollection.Name)]
 public sealed class ApiEndpointTests
@@ -37,7 +37,7 @@ public sealed class ApiEndpointTests
     {
         using var client = _fixture.Factory.CreateClient();
 
-        var response = await client.GetAsync("/api/proyectos");
+        var response = await client.GetAsync("/api/v1/proyectos");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -48,8 +48,8 @@ public sealed class ApiEndpointTests
         using var client = _fixture.Factory.CreateClient();
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("Integration_Test_Jwt_Key_At_Least_32_Bytes_123!"));
         var token = new JwtSecurityToken(
-            issuer: "Proyectandtask.Api.Tests",
-            audience: "Proyectandtask.Api.Tests.Client",
+            issuer: "Proyectandtask.Api.IntegrationTests",
+            audience: "Proyectandtask.Api.IntegrationTests.Client",
             claims: [new Claim(ClaimTypes.Name, "sin-id")],
             notBefore: DateTime.UtcNow.AddMinutes(-1),
             expires: DateTime.UtcNow.AddMinutes(5),
@@ -58,7 +58,7 @@ public sealed class ApiEndpointTests
             "Bearer",
             new JwtSecurityTokenHandler().WriteToken(token));
 
-        var response = await client.GetAsync("/api/proyectos");
+        var response = await client.GetAsync("/api/v1/proyectos");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -76,16 +76,16 @@ public sealed class ApiEndpointTests
             fechaFinalizacion = fechaInicio.AddDays(10)
         };
 
-        var createResponse = await client.PostAsJsonAsync("/api/proyectos", request);
+        var createResponse = await client.PostAsJsonAsync("/api/v1/proyectos", request);
 
         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
         var proyecto = await createResponse.Content.ReadFromJsonAsync<ProyectoResponseDto>();
         Assert.NotNull(proyecto);
 
-        var getResponse = await client.GetAsync($"/api/proyectos/{proyecto.Id}");
+        var getResponse = await client.GetAsync($"/api/v1/proyectos/{proyecto.Id}");
         Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
 
-        var progressResponse = await client.GetAsync($"/api/proyectos/{proyecto.Id}/avance");
+        var progressResponse = await client.GetAsync($"/api/v1/proyectos/{proyecto.Id}/avance");
         Assert.Equal(HttpStatusCode.OK, progressResponse.StatusCode);
         Assert.Equal(0m, await progressResponse.Content.ReadFromJsonAsync<decimal>());
     }
@@ -95,7 +95,7 @@ public sealed class ApiEndpointTests
     {
         using var client = await CreateAuthenticatedClientAsync();
         var fechaInicio = DateTime.UtcNow.Date;
-        var projectResponse = await client.PostAsJsonAsync("/api/proyectos", new
+        var projectResponse = await client.PostAsJsonAsync("/api/v1/proyectos", new
         {
             name = $"Proyecto para tareas {Guid.NewGuid():N}",
             fechaInicio,
@@ -105,7 +105,7 @@ public sealed class ApiEndpointTests
         var proyecto = await projectResponse.Content.ReadFromJsonAsync<ProyectoResponseDto>();
         Assert.NotNull(proyecto);
 
-        var createTaskResponse = await client.PostAsJsonAsync("/api/tareas", new
+        var createTaskResponse = await client.PostAsJsonAsync("/api/v1/tareas", new
         {
             name = "Tarea de integración",
             proyectoId = proyecto.Id,
@@ -118,12 +118,12 @@ public sealed class ApiEndpointTests
         Assert.NotNull(tarea);
 
         var stateResponse = await client.PatchAsJsonAsync(
-            $"/api/tareas/{tarea.Id}/estado",
+            $"/api/v1/tareas/{tarea.Id}/estado",
             new { estado = "completada" });
         Assert.Equal(HttpStatusCode.OK, stateResponse.StatusCode);
 
         var filteredResponse = await client.GetAsync(
-            $"/api/tareas/proyecto/{proyecto.Id}/estado?estado=completada");
+            $"/api/v1/tareas/proyecto/{proyecto.Id}/estado?estado=completada");
         Assert.Equal(HttpStatusCode.OK, filteredResponse.StatusCode);
         var tareas = await filteredResponse.Content.ReadFromJsonAsync<List<TareaResponseDto>>(ResponseJsonOptions);
         Assert.NotNull(tareas);
@@ -135,7 +135,7 @@ public sealed class ApiEndpointTests
     {
         using var client = await CreateAuthenticatedClientAsync();
         var fechaInicio = DateTime.UtcNow.Date;
-        var response = await client.PostAsJsonAsync("/api/proyectos", new
+        var response = await client.PostAsJsonAsync("/api/v1/proyectos", new
         {
             name = $"Proyecto inválido {Guid.NewGuid():N}",
             fechaInicio,
@@ -156,34 +156,34 @@ public sealed class ApiEndpointTests
         var projectB = await CreateProjectAsync(clientB, $"Privado-B-{Guid.NewGuid():N}");
         var taskB = await CreateTaskAsync(clientB, projectB.Id, "Tarea privada B");
 
-        var projectsForB = await clientB.GetFromJsonAsync<List<ProyectoResponseDto>>("/api/proyectos");
+        var projectsForB = await clientB.GetFromJsonAsync<List<ProyectoResponseDto>>("/api/v1/proyectos");
         Assert.NotNull(projectsForB);
         Assert.Contains(projectsForB, project => project.Id == projectB.Id);
         Assert.DoesNotContain(projectsForB, project => project.Id == projectA.Id);
 
-        Assert.Equal(HttpStatusCode.NotFound, (await clientB.GetAsync($"/api/proyectos/{projectA.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await clientB.GetAsync($"/api/proyectos/{projectA.Id}/avance")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await clientB.PutAsJsonAsync($"/api/proyectos/{projectA.Id}", ProjectRequest("Changed", projectA))).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await clientB.DeleteAsync($"/api/proyectos/{projectA.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await clientB.GetAsync($"/api/v1/proyectos/{projectA.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await clientB.GetAsync($"/api/v1/proyectos/{projectA.Id}/avance")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await clientB.PutAsJsonAsync($"/api/v1/proyectos/{projectA.Id}", ProjectRequest("Changed", projectA))).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await clientB.DeleteAsync($"/api/v1/proyectos/{projectA.Id}")).StatusCode);
 
-        Assert.Equal(HttpStatusCode.NotFound, (await clientB.GetAsync($"/api/tareas/{taskA.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await clientB.PutAsJsonAsync($"/api/tareas/{taskA.Id}", TaskRequest("Changed", projectB.Id))).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await clientB.PatchAsJsonAsync($"/api/tareas/{taskA.Id}/estado", new { estado = "completada" })).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await clientB.DeleteAsync($"/api/tareas/{taskA.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await clientB.GetAsync($"/api/v1/tareas/{taskA.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await clientB.PutAsJsonAsync($"/api/v1/tareas/{taskA.Id}", TaskRequest("Changed", projectB.Id))).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await clientB.PatchAsJsonAsync($"/api/v1/tareas/{taskA.Id}/estado", new { estado = "completada" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await clientB.DeleteAsync($"/api/v1/tareas/{taskA.Id}")).StatusCode);
 
-        AssertProjectTaskListNotFound(await clientB.GetAsync($"/api/tareas/proyecto/{projectA.Id}"));
-        AssertProjectTaskListNotFound(await clientB.GetAsync($"/api/tareas/proyecto/{projectA.Id}/estado?estado=pendiente"));
-        AssertProjectTaskListNotFound(await clientB.GetAsync($"/api/tareas/proyecto/{projectA.Id}/prioridad?prioridad=Alta"));
-        AssertProjectTaskListNotFound(await clientB.GetAsync($"/api/tareas/proyecto/{projectA.Id}/vencidas"));
-        using var createInForeignProject = await clientB.PostAsJsonAsync("/api/tareas", TaskRequest("Tarea invasora", projectA.Id));
-        using var moveToForeignProject = await clientB.PutAsJsonAsync($"/api/tareas/{taskB.Id}", TaskRequest("Tarea movida", projectA.Id));
+        AssertProjectTaskListNotFound(await clientB.GetAsync($"/api/v1/tareas/proyecto/{projectA.Id}"));
+        AssertProjectTaskListNotFound(await clientB.GetAsync($"/api/v1/tareas/proyecto/{projectA.Id}/estado?estado=pendiente"));
+        AssertProjectTaskListNotFound(await clientB.GetAsync($"/api/v1/tareas/proyecto/{projectA.Id}/prioridad?prioridad=Alta"));
+        AssertProjectTaskListNotFound(await clientB.GetAsync($"/api/v1/tareas/proyecto/{projectA.Id}/vencidas"));
+        using var createInForeignProject = await clientB.PostAsJsonAsync("/api/v1/tareas", TaskRequest("Tarea invasora", projectA.Id));
+        using var moveToForeignProject = await clientB.PutAsJsonAsync($"/api/v1/tareas/{taskB.Id}", TaskRequest("Tarea movida", projectA.Id));
         Assert.Equal(HttpStatusCode.BadRequest, createInForeignProject.StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, moveToForeignProject.StatusCode);
         Assert.Contains("El proyecto indicado no existe.", await createInForeignProject.Content.ReadAsStringAsync());
         Assert.Contains("El proyecto indicado no existe.", await moveToForeignProject.Content.ReadAsStringAsync());
 
-        var projectAAfter = await clientA.GetFromJsonAsync<ProyectoResponseDto>($"/api/proyectos/{projectA.Id}");
-        var taskAAfter = await clientA.GetFromJsonAsync<TareaResponseDto>($"/api/tareas/{taskA.Id}", ResponseJsonOptions);
+        var projectAAfter = await clientA.GetFromJsonAsync<ProyectoResponseDto>($"/api/v1/proyectos/{projectA.Id}");
+        var taskAAfter = await clientA.GetFromJsonAsync<TareaResponseDto>($"/api/v1/tareas/{taskA.Id}", ResponseJsonOptions);
         Assert.NotNull(projectAAfter);
         Assert.Equal(projectA.Name, projectAAfter.Name);
         Assert.NotNull(taskAAfter);
@@ -191,11 +191,11 @@ public sealed class ApiEndpointTests
         Assert.Equal(EstadoTarea.pendiente, taskAAfter.EstadoTarea);
 
         // El usuario A conserva las operaciones sobre sus propios recursos.
-        Assert.Equal(HttpStatusCode.OK, (await clientA.PutAsJsonAsync($"/api/proyectos/{projectA.Id}", ProjectRequest("Proyecto A actualizado", projectA))).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await clientA.PatchAsJsonAsync($"/api/tareas/{taskA.Id}/estado", new { estado = "completada" })).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await clientA.PutAsJsonAsync($"/api/tareas/{taskA.Id}", TaskRequest("Tarea A actualizada", projectA.Id))).StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, (await clientA.DeleteAsync($"/api/tareas/{taskA.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, (await clientA.DeleteAsync($"/api/proyectos/{projectA.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await clientA.PutAsJsonAsync($"/api/v1/proyectos/{projectA.Id}", ProjectRequest("Proyecto A actualizado", projectA))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await clientA.PatchAsJsonAsync($"/api/v1/tareas/{taskA.Id}/estado", new { estado = "completada" })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await clientA.PutAsJsonAsync($"/api/v1/tareas/{taskA.Id}", TaskRequest("Tarea A actualizada", projectA.Id))).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await clientA.DeleteAsync($"/api/v1/tareas/{taskA.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await clientA.DeleteAsync($"/api/v1/proyectos/{projectA.Id}")).StatusCode);
     }
 
     [Fact]
@@ -205,9 +205,9 @@ public sealed class ApiEndpointTests
         using var clientB = await CreateAuthenticatedClientAsync();
         var name = $"Nombre compartido {Guid.NewGuid():N}";
 
-        Assert.Equal(HttpStatusCode.Created, (await clientA.PostAsJsonAsync("/api/proyectos", ProjectRequest(name))).StatusCode);
-        Assert.Equal(HttpStatusCode.BadRequest, (await clientA.PostAsJsonAsync("/api/proyectos", ProjectRequest(name.ToUpperInvariant()))).StatusCode);
-        Assert.Equal(HttpStatusCode.Created, (await clientB.PostAsJsonAsync("/api/proyectos", ProjectRequest(name.ToLowerInvariant()))).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await clientA.PostAsJsonAsync("/api/v1/proyectos", ProjectRequest(name))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await clientA.PostAsJsonAsync("/api/v1/proyectos", ProjectRequest(name.ToUpperInvariant()))).StatusCode);
+        Assert.Equal(HttpStatusCode.Created, (await clientB.PostAsJsonAsync("/api/v1/proyectos", ProjectRequest(name.ToLowerInvariant()))).StatusCode);
     }
 
     [Fact]
@@ -216,13 +216,13 @@ public sealed class ApiEndpointTests
         using var client = await CreateAuthenticatedClientAsync();
 
         var emptyProject = await CreateProjectAsync(client, $"Vacío-{Guid.NewGuid():N}");
-        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/proyectos/{emptyProject.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/v1/proyectos/{emptyProject.Id}")).StatusCode);
 
         var completedProject = await CreateProjectAsync(client, $"Completado-{Guid.NewGuid():N}");
         var completedTask = await CreateTaskAsync(client, completedProject.Id, "Completada");
-        Assert.Equal(HttpStatusCode.OK, (await client.PatchAsJsonAsync($"/api/tareas/{completedTask.Id}/estado", new { estado = "completada" })).StatusCode);
-        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/proyectos/{completedProject.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/tareas/{completedTask.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PatchAsJsonAsync($"/api/v1/tareas/{completedTask.Id}/estado", new { estado = "completada" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/v1/proyectos/{completedProject.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/tareas/{completedTask.Id}")).StatusCode);
 
         foreach (var states in new[]
                  {
@@ -237,29 +237,29 @@ public sealed class ApiEndpointTests
             {
                 var task = await CreateTaskAsync(client, blockedProject.Id, $"{state}-{Guid.NewGuid():N}");
                 if (state != "pendiente")
-                    Assert.Equal(HttpStatusCode.OK, (await client.PatchAsJsonAsync($"/api/tareas/{task.Id}/estado", new { estado = state })).StatusCode);
+                    Assert.Equal(HttpStatusCode.OK, (await client.PatchAsJsonAsync($"/api/v1/tareas/{task.Id}/estado", new { estado = state })).StatusCode);
                 tasks.Add(task);
             }
 
-            var blocked = await client.DeleteAsync($"/api/proyectos/{blockedProject.Id}");
+            var blocked = await client.DeleteAsync($"/api/v1/proyectos/{blockedProject.Id}");
             Assert.Equal(HttpStatusCode.BadRequest, blocked.StatusCode);
             Assert.Contains("No se puede eliminar un proyecto que tiene tareas sin completar.", await blocked.Content.ReadAsStringAsync());
-            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/proyectos/{blockedProject.Id}")).StatusCode);
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/v1/proyectos/{blockedProject.Id}")).StatusCode);
             foreach (var task in tasks)
-                Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/tareas/{task.Id}")).StatusCode);
+                Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/v1/tareas/{task.Id}")).StatusCode);
         }
 
         var projectWithCompleted = await CreateProjectAsync(client, $"Solo completadas-{Guid.NewGuid():N}");
         var completed = await CreateTaskAsync(client, projectWithCompleted.Id, "Completada local");
-        await client.PatchAsJsonAsync($"/api/tareas/{completed.Id}/estado", new { estado = "completada" });
+        await client.PatchAsJsonAsync($"/api/v1/tareas/{completed.Id}/estado", new { estado = "completada" });
         var otherProject = await CreateProjectAsync(client, $"Otro proyecto-{Guid.NewGuid():N}");
         var inProgressElsewhere = await CreateTaskAsync(client, otherProject.Id, "En progreso ajena");
-        await client.PatchAsJsonAsync($"/api/tareas/{inProgressElsewhere.Id}/estado", new { estado = "progreso" });
-        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/proyectos/{projectWithCompleted.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/tareas/{completed.Id}")).StatusCode);
+        await client.PatchAsJsonAsync($"/api/v1/tareas/{inProgressElsewhere.Id}/estado", new { estado = "progreso" });
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/v1/proyectos/{projectWithCompleted.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/tareas/{completed.Id}")).StatusCode);
 
         Assert.Equal(HttpStatusCode.NotFound,
-            (await client.DeleteAsync($"/api/proyectos/{Guid.NewGuid()}")).StatusCode);
+            (await client.DeleteAsync($"/api/v1/proyectos/{Guid.NewGuid()}")).StatusCode);
     }
 
     [Fact]
@@ -272,7 +272,7 @@ public sealed class ApiEndpointTests
         var adminEmail = $"admin-{Guid.NewGuid():N}@example.com";
         var adminName = $"admin-{Guid.NewGuid():N}";
         using var registrationClient = _fixture.Factory.CreateClient();
-        var registration = await registrationClient.PostAsJsonAsync("/api/auth/register", new
+        var registration = await registrationClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             userName = adminName,
             email = adminEmail,
@@ -294,7 +294,7 @@ public sealed class ApiEndpointTests
         }
 
         var loginClient = _fixture.Factory.CreateClient();
-        var login = await loginClient.PostAsJsonAsync("/api/auth/login", new
+        var login = await loginClient.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = adminEmail,
             password = "Integration_Test!Pass123"
@@ -303,11 +303,11 @@ public sealed class ApiEndpointTests
         loginClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer", loginBody.RootElement.GetProperty("accessToken").GetString());
 
-        Assert.Equal(HttpStatusCode.OK, (await loginClient.GetAsync($"/api/tareas/{task.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await loginClient.GetAsync($"/api/tareas/proyecto/{project.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await loginClient.PatchAsJsonAsync($"/api/tareas/{task.Id}/estado", new { estado = "completada" })).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await loginClient.DeleteAsync($"/api/tareas/{task.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.OK, (await ownerClient.GetAsync($"/api/tareas/{task.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await loginClient.GetAsync($"/api/v1/tareas/{task.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await loginClient.GetAsync($"/api/v1/tareas/proyecto/{project.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await loginClient.PatchAsJsonAsync($"/api/v1/tareas/{task.Id}/estado", new { estado = "completada" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await loginClient.DeleteAsync($"/api/v1/tareas/{task.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await ownerClient.GetAsync($"/api/v1/tareas/{task.Id}")).StatusCode);
         loginBody.Dispose();
         loginClient.Dispose();
     }
@@ -331,23 +331,23 @@ public sealed class ApiEndpointTests
             await context.SaveChangesAsync();
         }
 
-        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/proyectos/{project.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.PutAsJsonAsync($"/api/proyectos/{project.Id}", ProjectRequest("Intento", new ProyectoResponseDto
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/proyectos/{project.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.PutAsJsonAsync($"/api/v1/proyectos/{project.Id}", ProjectRequest("Intento", new ProyectoResponseDto
         {
             FechaInicio = project.FechaInicio,
             FechaFinalizacion = project.FechaFinalizacion
         }))).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"/api/proyectos/{project.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/proyectos/{project.Id}/avance")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/tareas/{task.Id}")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.PutAsJsonAsync($"/api/tareas/{task.Id}", TaskRequest("Intento", project.Id))).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.PatchAsJsonAsync($"/api/tareas/{task.Id}/estado", new { estado = "completada" })).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"/api/tareas/{task.Id}")).StatusCode);
-        AssertProjectTaskListNotFound(await client.GetAsync($"/api/tareas/proyecto/{project.Id}"));
-        AssertProjectTaskListNotFound(await client.GetAsync($"/api/tareas/proyecto/{project.Id}/estado?estado=pendiente"));
-        AssertProjectTaskListNotFound(await client.GetAsync($"/api/tareas/proyecto/{project.Id}/prioridad?prioridad=Alta"));
-        AssertProjectTaskListNotFound(await client.GetAsync($"/api/tareas/proyecto/{project.Id}/vencidas"));
-        var visibleProjects = await client.GetFromJsonAsync<List<ProyectoResponseDto>>("/api/proyectos");
+        Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"/api/v1/proyectos/{project.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/proyectos/{project.Id}/avance")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/v1/tareas/{task.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.PutAsJsonAsync($"/api/v1/tareas/{task.Id}", TaskRequest("Intento", project.Id))).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.PatchAsJsonAsync($"/api/v1/tareas/{task.Id}/estado", new { estado = "completada" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"/api/v1/tareas/{task.Id}")).StatusCode);
+        AssertProjectTaskListNotFound(await client.GetAsync($"/api/v1/tareas/proyecto/{project.Id}"));
+        AssertProjectTaskListNotFound(await client.GetAsync($"/api/v1/tareas/proyecto/{project.Id}/estado?estado=pendiente"));
+        AssertProjectTaskListNotFound(await client.GetAsync($"/api/v1/tareas/proyecto/{project.Id}/prioridad?prioridad=Alta"));
+        AssertProjectTaskListNotFound(await client.GetAsync($"/api/v1/tareas/proyecto/{project.Id}/vencidas"));
+        var visibleProjects = await client.GetFromJsonAsync<List<ProyectoResponseDto>>("/api/v1/proyectos");
         Assert.NotNull(visibleProjects);
         Assert.DoesNotContain(visibleProjects, item => item.Id == project.Id);
     }
@@ -377,14 +377,14 @@ public sealed class ApiEndpointTests
 
     private static async Task<ProyectoResponseDto> CreateProjectAsync(HttpClient client, string name)
     {
-        var response = await client.PostAsJsonAsync("/api/proyectos", ProjectRequest(name));
+        var response = await client.PostAsJsonAsync("/api/v1/proyectos", ProjectRequest(name));
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<ProyectoResponseDto>())!;
     }
 
     private static async Task<TareaResponseDto> CreateTaskAsync(HttpClient client, Guid projectId, string name)
     {
-        var response = await client.PostAsJsonAsync("/api/tareas", TaskRequest(name, projectId));
+        var response = await client.PostAsJsonAsync("/api/v1/tareas", TaskRequest(name, projectId));
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<TareaResponseDto>(ResponseJsonOptions))!;
     }
@@ -392,7 +392,7 @@ public sealed class ApiEndpointTests
     private async Task<HttpClient> CreateAuthenticatedClientAsync()
     {
         var client = _fixture.Factory.CreateClient();
-        var registrationResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registrationResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             userName = $"tester-{Guid.NewGuid():N}",
             email = $"{Guid.NewGuid():N}@example.com",

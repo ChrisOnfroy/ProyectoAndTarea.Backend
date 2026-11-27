@@ -116,9 +116,9 @@ flowchart TD
 │   └── Proyectoandtask.Infrastructure/ # Context/, Configurations/, Repositories/,
 │                                       # Identity/, Services/, Migrations/
 ├── tests/
-│   ├── Proyectandtask.Api.Tests/
-│   ├── Proyectoandtask.Application.Tests/
-│   ├── Proyectoandtask.Domain.Tests/
+│   ├── Proyectandtask.Api.IntegrationTests/
+│   ├── Proyectoandtask.Application.UnitTests/
+│   ├── Proyectoandtask.Domain.UnitTests/
 │   └── Proyectoandtask.Infrastructure.IntegrationTests/
 └── proyectandtask.slnx                 # Solución
 ```
@@ -459,10 +459,10 @@ dotnet test
 
 | Proyecto de pruebas | Qué valida | Pruebas | Docker |
 |---|---|:-:|:-:|
-| `Proyectoandtask.Domain.Tests` | Entidades, objetos de valor y excepciones | 6 | No |
-| `Proyectoandtask.Application.Tests` | Reglas de los servicios | 9 | No |
+| `Proyectoandtask.Domain.UnitTests` | Entidades, objetos de valor y excepciones | 6 | No |
+| `Proyectoandtask.Application.UnitTests` | Reglas de los servicios | 9 | No |
 | `Proyectoandtask.Infrastructure.IntegrationTests` | Repositorios sobre PostgreSQL | 6 | **Sí** |
-| `Proyectandtask.Api.Tests` | Endpoints HTTP y aislamiento entre usuarios | 9 | **Sí** |
+| `Proyectandtask.Api.IntegrationTests` | Endpoints HTTP y aislamiento entre usuarios | 9 | **Sí** |
 | **Total** | | **30** | |
 
 Testcontainers crea los contenedores `postgres:16-alpine` automáticamente. Para recopilar cobertura:

@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 using Proyectoandtask.Infrastructure.Context;
 
-namespace Proyectandtask.Api.Tests;
+namespace Proyectandtask.Api.IntegrationTests;
 
 [CollectionDefinition("API PostgreSQL integration tests", DisableParallelization = true)]
 public sealed class ApiPostgreSqlCollection : ICollectionFixture<ApiPostgreSqlFixture>
@@ -38,17 +38,19 @@ public sealed class ApiPostgreSqlFixture : IAsyncLifetime
         await _database.StartAsync();
 
         SetEnvironmentValue("ConnectionStrings__DefaultConnection", _database.GetConnectionString());
-        SetEnvironmentValue("Jwt__Issuer", "Proyectandtask.Api.Tests");
-        SetEnvironmentValue("Jwt__Audience", "Proyectandtask.Api.Tests.Client");
+        SetEnvironmentValue("Jwt__Issuer", "Proyectandtask.Api.IntegrationTests");
+        SetEnvironmentValue("Jwt__Audience", "Proyectandtask.Api.IntegrationTests.Client");
         SetEnvironmentValue("Jwt__SecretKey", "Integration_Test_Jwt_Key_At_Least_32_Bytes_123!");
         SetEnvironmentValue("Jwt__AccessTokenMinutes", "15");
 
+        // Aplicar migraciones antes de arrancar la API: al iniciar, Program ejecuta DemoDataSeeder.
+        await using (var context = CreateContext())
+        {
+            await context.Database.MigrateAsync();
+        }
+
         Factory = new ApiWebApplicationFactory();
         using var client = Factory.CreateClient();
-
-        await using var scope = Factory.Services.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await context.Database.MigrateAsync();
     }
 
     public async Task DisposeAsync()

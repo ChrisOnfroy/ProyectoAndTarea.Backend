@@ -6,7 +6,7 @@ using proyectandtask.Domain.Entities;
 using proyectandtask.Domain.Enums;
 using proyectandtask.Domain.Exceptions;
 
-namespace Proyectoandtask.Application.Tests;
+namespace Proyectoandtask.Application.UnitTests;
 
 public sealed class ServiceRequirementTests
 {

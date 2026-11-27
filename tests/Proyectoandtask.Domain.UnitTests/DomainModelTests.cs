@@ -3,7 +3,7 @@ using proyectandtask.Domain.Entities;
 using proyectandtask.Domain.Enums;
 using proyectandtask.Domain.Exceptions;
 
-namespace Proyectoandtask.Domain.Tests;
+namespace Proyectoandtask.Domain.UnitTests;
 
 public sealed class DomainModelTests
 {

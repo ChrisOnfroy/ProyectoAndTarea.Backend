@@ -1,8 +1,8 @@
 <Solution>
   <Folder Name="/tests/">
-    <Project Path="tests/Proyectandtask.Api.Tests/Proyectandtask.Api.Tests.csproj" />
-    <Project Path="tests/Proyectoandtask.Application.Tests/Proyectoandtask.Application.Tests.csproj" />
-    <Project Path="tests/Proyectoandtask.Domain.Tests/Proyectoandtask.Domain.Tests.csproj" />
+    <Project Path="tests/Proyectandtask.Api.IntegrationTests/Proyectandtask.Api.IntegrationTests.csproj" />
+    <Project Path="tests/Proyectoandtask.Application.UnitTests/Proyectoandtask.Application.UnitTests.csproj" />
+    <Project Path="tests/Proyectoandtask.Domain.UnitTests/Proyectoandtask.Domain.UnitTests.csproj" />
     <Project Path="tests/Proyectoandtask.Infrastructure.IntegrationTests/Proyectoandtask.Infrastructure.IntegrationTests.csproj" />
   </Folder>
   <Project Path="src/Proyectandtask.Api/Proyectandtask.Api.csproj" />
