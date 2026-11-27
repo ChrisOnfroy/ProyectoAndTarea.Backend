@@ -462,7 +462,7 @@ dotnet test
 | `Proyectoandtask.Domain.UnitTests` | Entidades, objetos de valor y excepciones | 6 | No |
 | `Proyectoandtask.Application.UnitTests` | Reglas de los servicios | 9 | No |
 | `Proyectoandtask.Infrastructure.IntegrationTests` | Repositorios sobre PostgreSQL | 6 | **Sí** |
-| `Proyectandtask.Api.IntegrationTests` | Endpoints HTTP y aislamiento entre usuarios | 9 | **Sí** |
+| `Proyectandtask.Api.IntegrationTests` | Endpoints HTTP y aislamiento entre usuarios | 10 | **Sí** |
 | **Total** | | **30** | |
 
 Testcontainers crea los contenedores `postgres:16-alpine` automáticamente. Para recopilar cobertura:
