@@ -40,6 +40,7 @@ jobs:
     needs: build
     permissions:
       contents: read
+      id-token: write
     
     steps:
       - name: Download artifact from build job
@@ -50,8 +51,10 @@ jobs:
       - name: Sign in to Azure
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-      
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_29512B28503E44D78212EA5839608546 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_47E099947B104CA7937B3C6B707A138F }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B5EC0BDAFDE74AD39C85C26B62C84402 }}
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
